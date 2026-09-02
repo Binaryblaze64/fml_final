@@ -471,43 +471,74 @@ def generate_table4(data, models):
 # ==============================================================================
 
 def generate_figure2(inf):
-    print("\n[Figure 2] Parity Plot ...")
-    y_true = inf['y_true']; gtx = inf['gtx_preds']
-    gt     = inf['gt_preds']; st  = inf['steric']
+    print("\n[Figure 2] Parity Plot (Publication Grade) ...")
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    y_true = inf['y_true']
+    gtx    = inf['gtx_preds']
+    gt     = inf['gt_preds']
+    st     = inf['steric']
     r2, rmse, mae = inf['r2'], inf['rmse'], inf['mae']
     gt_r2   = r2_score(y_true, gt)
     gt_rmse = np.sqrt(mean_squared_error(y_true, gt))
     gt_mae  = mean_absolute_error(y_true, gt)
-    x_band  = np.linspace(0, 100, 300)
+    x_band  = np.linspace(-5, 105, 400)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6.5))
-    fig.suptitle("PhysiChem-GTX: Predicted vs. Actual Membrane Rejection Efficiency (%)",
-                 fontsize=13, fontweight='bold', y=1.01)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.5, 6.8), dpi=DPI)
+    fig.suptitle("Experimental vs. Machine-Learned Membrane Rejection Efficiency ($N_{\\mathrm{test}} = 162$)",
+                 fontsize=13.5, fontweight='bold', y=0.98)
 
-    for ax, preds, title, r2v, rmsev, maev, is_champ in [
-        (ax1, gtx, "(A) PhysiChem-GTX — Champion Model",      r2, rmse, mae, True),
-        (ax2, gt,  "(B) PhysiChem-GT — Graph Stream Only",    gt_r2, gt_rmse, gt_mae, False),
-    ]:
-        sc = ax.scatter(y_true, preds, c=st, cmap='plasma',
-                        alpha=0.72, s=38, edgecolors='white', linewidths=0.3, zorder=3)
-        ax.plot([0, 100], [0, 100], 'k--', lw=1.8, label='y = x (Ideal)', zorder=2)
+    norm_c = Normalize(vmin=np.percentile(st, 2), vmax=np.percentile(st, 98))
+
+    panels = [
+        (ax1, gtx, "(a) PhysiChem-GTX (Champion Dual-Stream MoE)", r2, rmse, mae, True),
+        (ax2, gt,  "(b) PhysiChem-GT (3D Graph Transformer Stream)", gt_r2, gt_rmse, gt_mae, False),
+    ]
+
+    for ax, preds, title, r2v, rmsev, maev, is_champ in panels:
+        ax.set_aspect('equal', adjustable='box')
+        
+        # 1. Error bounds & parity line (drawn behind data)
         ax.fill_between(x_band, x_band - 10, x_band + 10,
-                        alpha=0.09, color='gray', label='+-10% band', zorder=1)
-        cb = plt.colorbar(sc, ax=ax, fraction=0.045, pad=0.03)
-        cb.set_label('Steric Ratio lambda', fontsize=9)
-        ax.set_xlim(-2, 105); ax.set_ylim(-2, 105)
-        ax.set_xlabel("Actual Rejection (%)", fontsize=11, fontweight='bold')
-        ax.set_ylabel("Predicted Rejection (%)", fontsize=11, fontweight='bold')
-        ax.set_title(title, fontsize=11, fontweight='bold')
-        ax.legend(fontsize=9, loc='upper left')
-        ax.grid(True, alpha=0.4)
-        color = PALETTE['primary'] if is_champ else PALETTE['neutral']
-        ax.text(0.97, 0.05,
-                f"R2 = {r2v:.4f}\nRMSE = {rmsev:.2f}%\nMAE = {maev:.2f}%\nN = {len(y_true)}",
-                transform=ax.transAxes, fontsize=10, va='bottom', ha='right',
-                bbox=dict(boxstyle='round,pad=0.4', facecolor='white', edgecolor=color, alpha=0.9))
+                        alpha=0.10, color='#4B5563', label=r'$\pm 10\%$ Error Bound', zorder=1)
+        ax.plot([-5, 105], [-5, 105], 'k--', lw=1.6, label=r'Parity Line ($y = x$)', zorder=2)
 
-    plt.tight_layout()
+        # 2. Scatter points
+        sc = ax.scatter(y_true, preds, c=st, cmap='plasma', norm=norm_c,
+                        alpha=0.80, s=44, edgecolors='#1F2937', linewidths=0.4, zorder=3)
+
+        # 3. Axis limits & ticks
+        ax.set_xlim(-4, 104)
+        ax.set_ylim(-4, 104)
+        ax.set_xticks([0, 20, 40, 60, 80, 100])
+        ax.set_yticks([0, 20, 40, 60, 80, 100])
+        ax.set_xlabel("Experimental Rejection, $R_{\\mathrm{exp}}$ (%)", fontsize=11.5, fontweight='bold', labelpad=6)
+        ax.set_ylabel("Predicted Rejection, $R_{\\mathrm{pred}}$ (%)", fontsize=11.5, fontweight='bold', labelpad=6)
+        ax.set_title(title, fontsize=11.5, fontweight='bold', pad=10)
+        ax.legend(fontsize=9.2, loc='upper left', framealpha=0.92, edgecolor='#D1D5DB')
+        ax.grid(True, linestyle='--', alpha=0.35, color='#9CA3AF')
+
+        # 4. Inset metrics card
+        box_edge = PALETTE['primary'] if is_champ else '#9CA3AF'
+        badge_title = "\\textbf{PhysiChem-GTX}\n" if is_champ else "\\textbf{PhysiChem-GT}\n"
+        stats_text = (
+            f"$R^2 = {r2v:.4f}$\n"
+            f"$\\mathrm{{RMSE}} = {rmsev:.2f}\\%$\n"
+            f"$\\mathrm{{MAE}} = {maev:.2f}\\%$"
+        )
+        ax.text(0.96, 0.06, stats_text,
+                transform=ax.transAxes, fontsize=10.2, va='bottom', ha='right',
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='white',
+                          edgecolor=box_edge, linewidth=1.3, alpha=0.94))
+
+        # 5. Dedicated colorbar matched to square aspect ratio
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="4.5%", pad=0.12)
+        cb = fig.colorbar(sc, cax=cax)
+        cb.set_label(r'Steric Ratio, $\lambda = r_{\mathrm{solute}} / r_{\mathrm{pore}}$', fontsize=9.5)
+        cb.ax.tick_params(labelsize=8.5)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     path = os.path.join(OUT_DIR, "figure2_parity_plot.png")
     fig.savefig(path, dpi=DPI, bbox_inches='tight')
     plt.close(fig)
