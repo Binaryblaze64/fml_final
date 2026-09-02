@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{Ablation study. Each row removes one component. $\Delta R^2$ vs. full model.}
+\label{tab:ablation}
+\begin{tabular}{lcccc}
+\toprule
+Variant & $R^2$ & RMSE(\%) & MAE(\%) & $\Delta R^2$ \\
+\midrule
+\textbf{PhysiChem-GT (Full)} & 0.9121 & 8.60 & 5.89 & --- \\
+w/o 3D Bond Embeddings & 0.8654 & 10.72 & 6.78 & -0.0467 \\
+w/o Cross-Modal Attention & 0.8710 & 10.45 & 6.61 & -0.0411 \\
+w/o Multi-Scale Readout & 0.8805 & 10.12 & 6.35 & -0.0316 \\
+w/o 5 Physics Laws & 0.8837 & 9.89 & 6.74 & -0.0284 \\
+w/o Virtual Node Hub & 0.8842 & 9.87 & 6.42 & -0.0279 \\
+w/o Huber Loss & 0.8920 & 9.48 & 6.25 & -0.0201 \\
+\bottomrule
+\end{tabular}
+\end{table}

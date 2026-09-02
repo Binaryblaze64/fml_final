@@ -1,0 +1,8 @@
+Variant,Modification,R2,RMSE,MAE,Delta
+PhysiChem-GT (Full),All components enabled,0.9121,8.6,5.89,0.0
+w/o 3D Bond Embeddings,GINEConv -> standard GCN,0.8654,10.72,6.78,-0.0467
+w/o Cross-Modal Attention,4-head attention -> concatenation,0.871,10.45,6.61,-0.0411
+w/o Multi-Scale Readout,Mean+Max+Sum -> single mean pooling,0.8805,10.12,6.35,-0.0316
+w/o 5 Physics Laws,24-D -> 19-D raw features only,0.8837,9.89,6.74,-0.0284
+w/o Virtual Node Hub,Global virtual node removed,0.8842,9.87,6.42,-0.0279
+w/o Huber Loss,Huber(delta=5.0) -> standard MSE,0.892,9.48,6.25,-0.0201

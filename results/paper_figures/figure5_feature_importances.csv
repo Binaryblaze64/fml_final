@@ -1,0 +1,25 @@
+Feature,Importance
+Hydrophobic Affinity (H),6.919091
+TPSA (Å²),6.545177
+log D,6.531396
+Rotatable bonds,6.361489
+H-bond donors,6.215074
+Zeta potential (mV),5.1045327
+Permeability (Lp),5.039587
+Cross-flow velocity,4.9750156
+Steric Ratio (λ),4.9372168
+Molecular charge,4.7317495
+Ferry-Renkin (Φ),4.6456447
+Molecular radius (nm),4.61217
+Molecular weight (g/mol),4.575824
+Solute conc (μM),4.429864
+Pressure (bar),4.4007854
+Ionic strength (M),4.3692665
+Donnan Index (Ψ),4.3488817
+Polarizability,2.805804
+Temperature (°C),2.5075781
+Pore radius (nm),1.7942071
+H-bond acceptors,1.5059669
+Pure water flux,1.340308
+pH,1.2721187
+Contact angle (°),0.031254478

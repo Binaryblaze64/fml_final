@@ -1,0 +1,8 @@
+#,Model,Modality,Test R2,RMSE,MAE,Status,Delta R2
+1,Table + MACCS Keys,Tabular + 166-bit Fingerprints,0.7918,13.24,8.42,Literature,-0.1096
+2,GrowNN,19-D Tabular Only,0.8494,11.26,7.21,Literature,-0.052
+3,Table + ResNet-18,Tabular + 2D Mol. Image,0.8571,10.97,6.85,Literature,-0.0443
+4,MolGBN-OPR (Xiao et al. 2026),DynamicNet + GCN,0.9014,9.11,6.17,Base Paper,0.0
+5,PhysiChem-GT (Ours),24-D + GATv2 + CrossAttn,0.7607,14.19,8.74,Ours,-0.1407
+6,PhysiChem-XGB (Ours),24-D Physics + ECFP4,0.9127,8.57,5.44,Ours,0.0113
+7,PhysiChem-GTX (Ours Champion),24-D + GATv2 + XGB MoE Fusion,0.913,8.56,5.52,Champion,0.0116

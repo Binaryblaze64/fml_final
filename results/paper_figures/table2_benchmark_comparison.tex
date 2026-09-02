@@ -1,0 +1,18 @@
+\begin{table*}[htbp]
+\centering
+\caption{Benchmark on held-out test set. Bold = best value.}
+\label{tab:benchmark}
+\begin{tabular}{clllccc}
+\toprule
+\# & Model & Modality & Status & $R^2\uparrow$ & RMSE(\%)$\downarrow$ & MAE(\%)$\downarrow$ \\
+\midrule
+1 & Table + MACCS Keys & Tabular + 166-bit Fingerprints & Literature & 0.7918 & 13.24 & 8.42 \\
+2 & GrowNN & 19-D Tabular Only & Literature & 0.8494 & 11.26 & 7.21 \\
+3 & Table + ResNet-18 & Tabular + 2D Mol. Image & Literature & 0.8571 & 10.97 & 6.85 \\
+4 & MolGBN-OPR (Xiao et al. 2026) & DynamicNet + GCN & Base Paper & 0.9014 & 9.11 & 6.17 \\
+5 & PhysiChem-GT (Ours) & 24-D + GATv2 + CrossAttn & Ours & 0.7607 & 14.19 & 8.74 \\
+6 & PhysiChem-XGB (Ours) & 24-D Physics + ECFP4 & Ours & 0.9127 & 8.57 & 5.44 \\
+7 & \textbf{PhysiChem-GTX (Ours Champion)} & 24-D + GATv2 + XGB MoE Fusion & Champion & \textbf{0.9130} & \textbf{8.56} & \textbf{5.52} \\
+\bottomrule
+\end{tabular}
+\end{table*}

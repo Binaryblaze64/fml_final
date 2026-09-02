@@ -1,0 +1,35 @@
+\begin{table*}[htbp]
+\centering
+\caption{MemTrOC dataset summary statistics ($N=1{,}618$). Bold = engineered physics laws.}
+\label{tab:dataset}
+\begin{tabular}{llcrrrr}
+\toprule
+Feature & Units & Type & Mean & Std & Min & Max \\
+\midrule
+Pure water flux & L/m2/h & Raw & 58.383 & 41.889 & 7.130 & 228.000 \\
+Pressure (bar) & bar & Raw & 7.765 & 4.622 & 1.000 & 35.000 \\
+pH & - & Raw & 6.605 & 1.684 & 2.400 & 10.467 \\
+Temperature (C) & C & Raw & 23.446 & 2.061 & 20.000 & 25.000 \\
+Filtration duration (h) & h & Raw & 13.312 & 23.506 & 0.333 & 96.000 \\
+TrOC concentration (mg/L) & mg/L & Raw & 41.214 & 246.933 & 0.000 & 2000.000 \\
+MW (Da) & Da & Raw & 225.297 & 87.303 & 30.026 & 636.905 \\
+MWCO (Da) & Da & Raw & 193.860 & 87.418 & 65.000 & 460.000 \\
+Min projection (nm) & nm & Raw & 0.404 & 0.089 & 0.000 & 0.654 \\
+Max projection (nm) & nm & Raw & 0.581 & 0.154 & 0.000 & 1.000 \\
+Molecular radius (nm) & nm & Raw & 0.307 & 0.075 & 0.127 & 0.630 \\
+Pore radius (nm) & nm & Raw & 0.395 & 0.069 & 0.300 & 0.690 \\
+pKa1 & - & Raw & 8.027 & 4.812 & -3.700 & 17.600 \\
+Zeta potential (mV) & mV & Raw & -23.485 & 12.999 & -75.100 & 12.022 \\
+log Kow & - & Raw & 1.502 & 2.038 & -5.104 & 6.860 \\
+Contact angle (deg) & deg & Raw & 51.370 & 14.943 & 15.200 & 79.400 \\
+Molecular charge & - & Raw & -0.334 & 0.621 & -2.000 & 1.000 \\
+Charge product & - & Raw & 8.609 & 18.719 & -43.655 & 85.394 \\
+log D & - & Raw & 0.587 & 2.119 & -5.390 & 5.710 \\
+\textbf{Steric Ratio (lambda)} & dimensionless & Physics Law & 0.797 & 0.228 & 0.191 & 1.853 \\
+\textbf{Ferry-Renkin Factor (Phi)} & dimensionless & Physics Law & 0.155 & 0.185 & 0.000 & 0.881 \\
+\textbf{Hydraulic Permeability (Lp)} & L/m2/h/bar & Physics Law & 7.844 & 4.156 & 0.713 & 17.380 \\
+\textbf{Donnan Index (Psi)} & mV/pH & Physics Law & 1.097 & 2.890 & -17.792 & 11.909 \\
+\textbf{Hydrophobic Affinity (H)} & - & Physics Law & 0.348 & 1.367 & -4.654 & 4.530 \\
+\bottomrule
+\end{tabular}
+\end{table*}
