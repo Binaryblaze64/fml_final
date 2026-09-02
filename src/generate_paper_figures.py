@@ -775,7 +775,7 @@ def generate_figure6(data, models):
 # ==============================================================================
 
 def generate_figure4():
-    print("\n[Figure 4] NAS Evolutionary Search Progress ...")
+    print("\n[Figure 4] NAS Evolutionary Search Progress (Publication Grade) ...")
     nas_path = os.path.join(BASE_DIR, "results", "evolution_search", "search_progress.json")
     with open(nas_path) as f:
         nas = json.load(f)
@@ -786,58 +786,99 @@ def generate_figure4():
     all_best  = [r['is_best']     for r in results]
     all_time  = [r.get('time', 60) for r in results]
 
+    # 1. Generation best & Cumulative best
     gen_bests = {}
     for r in results:
         g = r['generation']
         if g not in gen_bests or r['test_r2'] > gen_bests[g]:
             gen_bests[g] = r['test_r2']
-    gens  = sorted(gen_bests); bests = [gen_bests[g] for g in gens]
+    gens  = sorted(gen_bests)
+    bests = [gen_bests[g] for g in gens]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-    fig.suptitle("Evolutionary Neural Architecture Search: R² Convergence over 13 Generations",
-                 fontsize=13, fontweight='bold', y=1.01)
+    # Cumulative running best
+    cum_bests = []
+    curr_max = -1.0
+    for b in bests:
+        curr_max = max(curr_max, b)
+        cum_bests.append(curr_max)
 
-    # Panel A
-    ax1.plot(gens, bests, 'o-', color=PALETTE['primary'], lw=2.5, ms=8,
-             markerfacecolor='white', markeredgewidth=2.0, label='Best R2 per Generation', zorder=4)
-    ax1.fill_between(gens, min(bests) - 0.02, bests, alpha=0.10, color=PALETTE['primary'])
-    cg  = gens[int(np.argmax(bests))]; cr2 = max(bests)
-    ax1.scatter([cg], [cr2], color=PALETTE['secondary'], s=160, zorder=5,
-                label=f'Champion (Gen {cg}, R2={cr2:.4f})')
-    ax1.annotate(f'Champion\nR2={cr2:.4f}',
-                 xy=(cg, cr2), xytext=(cg + 0.8, cr2 - 0.05), fontsize=9,
-                 arrowprops=dict(arrowstyle='->', color='gray'),
-                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.85))
-    ax1.axhline(0.9014, color=PALETTE['baseline'], lw=1.8, ls='--',
-                label='Base Paper R2=0.9014')
-    ax1.set_xlabel("NAS Generation", fontsize=11, fontweight='bold')
-    ax1.set_ylabel("Best Test R2", fontsize=11, fontweight='bold')
-    ax1.set_title("(A) Best R2 per Generation", fontsize=11, fontweight='bold')
-    ax1.set_xticks(gens); ax1.legend(fontsize=9, loc='lower right'); ax1.grid(True, alpha=0.4)
-    ax1.text(0.02, 0.97, f"Total: {len(results)} candidates | {max(gens)+1} generations",
-             transform=ax1.transAxes, fontsize=9, va='top',
-             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.5, 6.0), dpi=DPI)
+    fig.suptitle(r"Evolutionary Neural Architecture Search (NAS) Exploration for PhysiChem-GT ($N_{\mathrm{candidates}} = 37$)",
+                 fontsize=13, fontweight='bold', y=0.98)
 
-    # Panel B
-    colors_pts = [PALETTE['secondary'] if b else PALETTE['primary'] for b in all_best]
-    sizes_pts  = [80 + (t / max(all_time)) * 120 for t in all_time]
-    ax2.scatter(all_gen, all_r2, c=colors_pts, s=sizes_pts,
-                alpha=0.75, edgecolors='white', lw=0.5, zorder=3)
-    ax2.axhline(0.9014, color=PALETTE['baseline'], lw=1.8, ls='--', label='Base Paper R2=0.9014')
-    ax2.axhline(max(all_r2), color=PALETTE['secondary'], lw=1.5, ls=':',
-                label=f'Best Candidate R2={max(all_r2):.4f}')
-    gold = mpatches.Patch(color=PALETTE['secondary'], label='Champion Improved')
-    blue = mpatches.Patch(color=PALETTE['primary'],   label='Non-champion')
-    ax2.legend(handles=[gold, blue, *(ax2.get_legend_handles_labels()[0][2:])],
-               fontsize=9, loc='lower right')
-    ax2.set_xlabel("NAS Generation", fontsize=11, fontweight='bold')
-    ax2.set_ylabel("Test R2", fontsize=11, fontweight='bold')
-    ax2.set_title("(B) All 37 Candidate Architectures", fontsize=11, fontweight='bold')
-    ax2.set_xticks(sorted(set(all_gen))); ax2.grid(True, alpha=0.4)
-    ax2.text(0.02, 0.03, "Point size = training time",
-             transform=ax2.transAxes, fontsize=8, color=PALETTE['neutral'])
+    # ── Panel A: Trajectory ──
+    ax1.plot(gens, bests, 'o--', color='#60A5FA', lw=1.8, ms=6.5,
+             markerfacecolor='white', markeredgewidth=1.6, label='Generation Peak $R^2$', zorder=3)
+    ax1.plot(gens, cum_bests, 's-', color='#1E40AF', lw=2.4, ms=7.5,
+             markerfacecolor='#1E40AF', markeredgewidth=1.5, label='Cumulative Best $R^2$', zorder=4)
+    ax1.fill_between(gens, min(bests) - 0.03, cum_bests, alpha=0.08, color='#1E40AF')
 
-    plt.tight_layout()
+    # Champion callout
+    champ_idx = int(np.argmax(bests))
+    cg  = gens[champ_idx]
+    cr2 = bests[champ_idx]
+    ax1.scatter([cg], [cr2], color='#059669', s=160, zorder=5, edgecolor='white', lw=1.5,
+                label=f'Optimal Candidate ($R^2 = {cr2:.4f}$)')
+    ax1.annotate(f"Optimal Backbone\n(Gen {cg}: $R^2 = {cr2:.4f}$)",
+                 xy=(cg, cr2), xytext=(cg + 1.2, cr2 - 0.08),
+                 fontsize=9.2, fontweight='semibold', color='#059669',
+                 arrowprops=dict(arrowstyle='->', color='#059669', lw=1.3),
+                 bbox=dict(boxstyle='round,pad=0.4', facecolor='white',
+                           edgecolor='#059669', linewidth=1.2, alpha=0.94))
+
+    ax1.set_xlim(-0.5, max(gens) + 0.5)
+    ax1.set_ylim(0.52, 0.84)
+    ax1.set_xticks(gens)
+    ax1.set_xlabel("Evolutionary Generation", fontsize=11.5, fontweight='bold')
+    ax1.set_ylabel(r"Test Coefficient of Determination, $R^2$", fontsize=11.5, fontweight='bold')
+    ax1.set_title(r"(a) NAS Convergence Trajectory across 13 Generations", fontsize=11.5, fontweight='bold', pad=8)
+    ax1.legend(fontsize=9.2, loc='lower right', framealpha=0.92, edgecolor='#D1D5DB')
+    ax1.grid(True, linestyle='--', alpha=0.35, color='#9CA3AF')
+
+    # Search config inset
+    nas_card = (
+        r"$\mathbf{NAS\ Search\ Space}$" "\n"
+        "GNN Layers: 2 -- 4\n"
+        "Hidden Dim: 64 -- 256\n"
+        "Attn Heads: 2 -- 8\n"
+        "Virtual Node Hub: True/False\n"
+        "Physics Loss Coupling: True/False"
+    )
+    ax1.text(0.04, 0.06, nas_card,
+             transform=ax1.transAxes, fontsize=8.8, va='bottom', ha='left',
+             bbox=dict(boxstyle='round,pad=0.45', facecolor='white',
+                       edgecolor='#D1D5DB', linewidth=1.1, alpha=0.94))
+
+    # ── Panel B: All Candidate Architectures ──
+    colors_pts = ['#059669' if b else '#3B82F6' for b in all_best]
+    sizes_pts  = [55 + (t / max(all_time)) * 140 for t in all_time]
+
+    sc = ax2.scatter(all_gen, all_r2, c=colors_pts, s=sizes_pts,
+                     alpha=0.75, edgecolors='#1F2937', lw=0.5, zorder=3)
+    ax2.axhline(cr2, color='#059669', lw=1.4, ls=':',
+                label=f'Optimal GNN Backbone ($R^2 = {cr2:.4f}$)', zorder=2)
+
+    gold = mpatches.Patch(color='#059669', label='Discovered Improvement')
+    blue = mpatches.Patch(color='#3B82F6', label='Explored Mutation Candidate')
+    ax2.legend(handles=[gold, blue, *(ax2.get_legend_handles_labels()[0])],
+               fontsize=9.2, loc='lower right', framealpha=0.92, edgecolor='#D1D5DB')
+
+    ax2.set_xlim(-0.5, max(gens) + 0.5)
+    ax2.set_ylim(0.52, 0.84)
+    ax2.set_xticks(sorted(set(all_gen)))
+    ax2.set_xlabel("Evolutionary Generation", fontsize=11.5, fontweight='bold')
+    ax2.set_ylabel(r"Candidate Architecture Test $R^2$", fontsize=11.5, fontweight='bold')
+    ax2.set_title(r"(b) Fitness Distribution of all 37 Evaluated Architectures", fontsize=11.5, fontweight='bold', pad=8)
+    ax2.grid(True, linestyle='--', alpha=0.35, color='#9CA3AF')
+
+    ax2.text(0.04, 0.06,
+             r"$\mathbf{Note:}$ Marker size is proportional to" "\n"
+             r"per-candidate GPU training time (s)",
+             transform=ax2.transAxes, fontsize=8.8, va='bottom', ha='left',
+             bbox=dict(boxstyle='round,pad=0.4', facecolor='white',
+                       edgecolor='#D1D5DB', linewidth=1.1, alpha=0.94))
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     path = os.path.join(OUT_DIR, "figure4_nas_search_progress.png")
     fig.savefig(path, dpi=DPI, bbox_inches='tight')
     plt.close(fig)
