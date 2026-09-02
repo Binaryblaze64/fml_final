@@ -1034,54 +1034,71 @@ def generate_figure4():
 
 
 def generate_figure8(inf):
-    print("\n[Figure 8] Steric Exclusion Physics Validation ...")
+    print("\n[Figure 8] Steric Exclusion Physics Validation (Publication Grade) ...")
     steric = inf['steric']; preds = inf['gtx_preds']; charge = inf['charge']
 
-    lam_line = np.linspace(0, 1.55, 500)
+    lam_line = np.linspace(0.01, 1.55, 500)
     phi_line = np.where(
         lam_line < 1.0,
-        np.maximum(0, (1 - lam_line)**2 * (2 - (1 - lam_line)**2)) * 100,
-        100.0,
+        np.maximum(0, 1.0 - (1.0 - lam_line)**2 * (2.0 - (1.0 - lam_line)**2)) * 100.0,
+        100.0
     )
 
-    fig, ax = plt.subplots(figsize=(11, 7.5))
-    fig.suptitle("Physical Validation: Predicted Rejection vs. Steric Ratio\n"
-                 "Overlaid with Theoretical Ferry-Renkin Sieving Curve",
-                 fontsize=13, fontweight='bold')
+    plt.rcdefaults()
+    D = chr(36)
 
-    ax.axvspan(0,   0.5,  alpha=0.04, color='green',  zorder=0)
-    ax.axvspan(0.5, 1.0,  alpha=0.04, color='orange', zorder=0)
-    ax.axvspan(1.0, 1.55, alpha=0.06, color='red',    zorder=0)
+    fig, ax = plt.subplots(figsize=(10.8, 6.8), dpi=DPI)
+    fig.suptitle('Physical Validation: Machine-Learned Rejection vs. Dimensionless Steric Ratio (' + D + r'\lambda' + D + ')',
+                 fontsize=13, fontweight='bold', y=0.98)
 
-    ax.text(0.25, 103, "Diffusion Zone",    ha='center', fontsize=9, color='darkgreen',  style='italic')
-    ax.text(0.75, 103, "Transition Zone",   ha='center', fontsize=9, color='darkorange', style='italic')
-    ax.text(1.27, 103, "Size Exclusion",    ha='center', fontsize=9, color='darkred',    style='italic')
+    # Regimes
+    ax.axvspan(0.0, 0.45, alpha=0.04, color='#10B981', zorder=0)
+    ax.axvspan(0.45, 1.0, alpha=0.04, color='#F59E0B', zorder=0)
+    ax.axvspan(1.0, 1.55, alpha=0.05, color='#EF4444', zorder=0)
 
-    style_map = {-1: ('v', PALETTE['baseline'], "Negative (z=-1)"),
-                  0: ('o', PALETTE['neutral'],  "Neutral (z=0)"),
-                  1: ('^', PALETTE['primary'],  "Positive (z=+1)")}
-    for c_val, (mrk, clr, lbl) in style_map.items():
+    ax.text(0.22, 103, 'Regime I: Convective Diffusion', ha='center', fontsize=9.5, color='#047857', fontweight='semibold')
+    ax.text(0.72, 103, 'Regime II: Hindered Transition', ha='center', fontsize=9.5, color='#B45309', fontweight='semibold')
+    ax.text(1.27, 103, 'Regime III: Steric Exclusion', ha='center', fontsize=9.5, color='#B91C1C', fontweight='semibold')
+
+    # Charge scatter mapping
+    charge_styles = [
+        (-1.0, 'v', '#EF4444', 'Anionic (' + D + 'z = -1' + D + ', Donnan Repulsion)'),
+        (0.0,  'o', '#1E3A8A', 'Neutral (' + D + 'z = 0' + D + ', Steric/Hydrophobic)'),
+        (1.0,  '^', '#06B6D4', 'Cationic (' + D + 'z = +1' + D + ')')
+    ]
+
+    for c_val, mrk, clr, lbl in charge_styles:
         mask = (charge == c_val)
         if mask.sum() > 0:
             ax.scatter(steric[mask], preds[mask], color=clr, marker=mrk,
-                       s=42, alpha=0.65, edgecolors='white', lw=0.3,
-                       label=f'Charge {lbl}', zorder=3)
+                       s=46, alpha=0.82, edgecolors='#1E293B', linewidths=0.4,
+                       label=lbl, zorder=4)
 
-    ax.plot(lam_line, phi_line, 'k-', lw=2.5, label='Ferry-Renkin Theory', zorder=4)
-    ax.axvline(1.0, color=PALETTE['baseline'], lw=1.8, ls='--',
-               label='lambda=1.0 (Size Exclusion Threshold)', zorder=2)
-    ax.annotate("Rejection -> 100%\nas lambda -> 1",
-                xy=(0.98, 92), xytext=(0.65, 72), fontsize=9, ha='center',
-                arrowprops=dict(arrowstyle='->', color='black', lw=1.2),
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.85))
+    # Ferry-Renkin curve
+    ax.plot(lam_line, phi_line, color='#111827', lw=2.4, ls='-',
+            label='Ferry-Renkin Theoretical Curve (' + D + r'\Phi(\lambda)' + D + ')', zorder=3)
 
-    ax.set_xlim(0, 1.55); ax.set_ylim(-5, 110)
-    ax.set_xlabel("Steric Ratio lambda = r_solute / r_pore", fontsize=12, fontweight='bold')
-    ax.set_ylabel("Predicted Rejection Efficiency (%)",       fontsize=12, fontweight='bold')
-    ax.legend(fontsize=9, loc='lower right', framealpha=0.9)
-    ax.grid(True, alpha=0.35)
+    # Critical Threshold Line at lambda = 1.0
+    ax.axvline(1.0, color='#DC2626', lw=1.6, ls='--',
+               label='Size Exclusion Threshold (' + D + r'\lambda = 1.0' + D + ')', zorder=2)
 
-    plt.tight_layout()
+    ax.annotate('Strict Steric Sieving\n(' + D + r'R_{\mathrm{pred}} \to 100\%' + D + ' as ' + D + r'\lambda \geq 1' + D + ')',
+                xy=(1.02, 94), xytext=(1.12, 70), fontsize=9.2, fontweight='semibold', color='#991B1B',
+                arrowprops=dict(arrowstyle='->', color='#DC2626', lw=1.4),
+                bbox=dict(boxstyle='round,pad=0.45', facecolor='#FEF2F2',
+                          edgecolor='#FCA5A5', linewidth=1.1))
+
+    ax.set_xlim(0, 1.55)
+    ax.set_ylim(-4, 108)
+    ax.set_yticks([0, 20, 40, 60, 80, 100])
+    ax.set_xlabel('Dimensionless Steric Sieve Ratio, ' + D + r'\lambda = r_{\mathrm{solute}} / r_{\mathrm{pore}}' + D, fontsize=11.5, fontweight='bold', labelpad=6)
+    ax.set_ylabel('Predicted Membrane Rejection Efficiency, ' + D + r'R_{\mathrm{pred}}' + D + ' (%)', fontsize=11.5, fontweight='bold', labelpad=6)
+    ax.set_title('(a) Physical Conformance to Steric Hindrance Mechanics (' + D + r'N_{\mathrm{test}} = 162' + D + ')', fontsize=11.5, fontweight='bold', pad=8)
+
+    ax.legend(fontsize=9.0, loc='lower right', framealpha=0.96, edgecolor='#D1D5DB')
+    ax.grid(True, linestyle='--', alpha=0.35, color='#CBD5E1')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     path = os.path.join(OUT_DIR, "figure8_steric_physics_validation.png")
     fig.savefig(path, dpi=DPI, bbox_inches='tight')
     plt.close(fig)
