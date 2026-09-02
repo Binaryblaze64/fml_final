@@ -628,42 +628,86 @@ def generate_figure3():
 
 
 def generate_figure7(inf):
-    print("\n[Figure 7] MC-Dropout Uncertainty Bands ...")
+    print("\n[Figure 7] MC-Dropout Uncertainty Bands (Publication Grade) ...")
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    from scipy.stats import gaussian_kde
+
     y_true    = inf['y_true']
     gtx_preds = inf['gtx_preds']
     gt_stds   = inf['gt_stds']
 
     idx = np.argsort(gtx_preds)
     sx  = np.arange(len(idx))
-    sp  = gtx_preds[idx]; ss = gt_stds[idx]; st = y_true[idx]
+    sp  = gtx_preds[idx]
+    ss  = gt_stds[idx]
+    st  = y_true[idx]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-    fig.suptitle("PhysiChem-GTX: Predictive Uncertainty — Monte Carlo Dropout (50 Passes)",
-                 fontsize=12, fontweight='bold', y=1.01)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.8), dpi=DPI)
+    fig.suptitle(r"Predictive Epistemic Uncertainty Quantification via Monte Carlo Dropout ($N_{\mathrm{MC}} = 50$ Passes)",
+                 fontsize=13, fontweight='bold', y=0.98)
 
-    ax1.fill_between(sx, sp - 2*ss, sp + 2*ss, alpha=0.15, color=PALETTE['primary'], label='+-2sigma (95% CI)')
-    ax1.fill_between(sx, sp -   ss, sp +   ss, alpha=0.30, color=PALETTE['primary'], label='+-1sigma (68% CI)')
-    ax1.plot(sx, sp, color=PALETTE['primary'], lw=2.0, label='Predicted Rejection', zorder=4)
-    sc = ax1.scatter(sx, st, c=ss, cmap='RdYlGn_r', s=18, alpha=0.7, zorder=5, label='Actual Rejection')
-    ax1.set_xlabel("Test Molecules (sorted by prediction)", fontsize=11)
-    ax1.set_ylabel("Rejection Efficiency (%)", fontsize=11, fontweight='bold')
-    ax1.set_title("(A) Uncertainty Bands Across Test Set", fontsize=11, fontweight='bold')
-    ax1.legend(fontsize=9, loc='upper left'); ax1.set_ylim(-5, 110); ax1.grid(True, alpha=0.4)
-    ax1.text(0.97, 0.05, f"Mean sigma={gt_stds.mean():.2f}%",
-             transform=ax1.transAxes, fontsize=9, va='bottom', ha='right',
-             bbox=dict(boxstyle='round', facecolor='white', alpha=0.85))
+    # ── Panel A: Uncertainty Bands ──
+    ax1.fill_between(sx, np.clip(sp - 2*ss, 0, 100), np.clip(sp + 2*ss, 0, 100),
+                     alpha=0.18, color='#93C5FD', label=r'$\pm 2\sigma$ ($95\%$ Confidence Interval)')
+    ax1.fill_between(sx, np.clip(sp - ss, 0, 100), np.clip(sp + ss, 0, 100),
+                     alpha=0.35, color='#3B82F6', label=r'$\pm 1\sigma$ ($68\%$ Confidence Interval)')
+    ax1.plot(sx, sp, color='#1E3A8A', lw=2.2, label=r'Predicted Rejection, $R_{\mathrm{pred}}$', zorder=4)
 
-    ax2.hist(gt_stds, bins=20, color=PALETTE['primary'], edgecolor='white', lw=0.5, alpha=0.85)
-    ax2.axvline(gt_stds.mean(), color=PALETTE['baseline'], lw=2, ls='--',
-                label=f'Mean sigma={gt_stds.mean():.2f}%')
-    ax2.axvline(np.percentile(gt_stds, 95), color=PALETTE['warn'], lw=1.5, ls=':',
-                label=f'95th pct={np.percentile(gt_stds, 95):.2f}%')
-    ax2.set_xlabel("Epistemic Uncertainty sigma (%)", fontsize=11, fontweight='bold')
-    ax2.set_ylabel("Count", fontsize=11, fontweight='bold')
-    ax2.set_title("(B) Distribution of Uncertainties", fontsize=11, fontweight='bold')
-    ax2.legend(fontsize=9); ax2.grid(True, alpha=0.4)
+    sc = ax1.scatter(sx, st, c=ss, cmap='plasma', s=24, alpha=0.85,
+                     edgecolors='#1E293B', linewidths=0.4, zorder=5, label=r'Experimental, $R_{\mathrm{exp}}$')
 
-    plt.tight_layout()
+    ax1.set_xlim(-2, len(sx) + 2)
+    ax1.set_ylim(-4, 106)
+    ax1.set_xlabel(r"Evaluated Test Molecules (Ranked by Predicted Rejection)", fontsize=11.0, fontweight='bold')
+    ax1.set_ylabel(r"Membrane Rejection Efficiency (%)", fontsize=11.0, fontweight='bold')
+    ax1.set_title(r"(a) Ranked Confidence Intervals across Holdout Set ($N_{\mathrm{test}} = 162$)", fontsize=11.5, fontweight='bold', pad=8)
+    ax1.legend(fontsize=8.8, loc='upper left', framealpha=0.95, edgecolor='#D1D5DB')
+    ax1.grid(True, linestyle='--', alpha=0.35, color='#CBD5E1')
+
+    # Colorbar on Panel A for point uncertainty
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes("right", size="3.5%", pad=0.10)
+    cb = fig.colorbar(sc, cax=cax)
+    cb.set_label(r'Epistemic Uncertainty, $\sigma$ (%)', fontsize=9.0)
+    cb.ax.tick_params(labelsize=8.0)
+
+    # Inset Card
+    uq_card = (
+        r"$\mathbf{UQ\ Quantification}$" "\n"
+        r"Method: MC-Dropout" "\n"
+        r"Mean $\bar{\sigma} = " f"{gt_stds.mean():.2f}\\%$\n"
+        r"Median $= " f"{np.median(gt_stds):.2f}\\%$\n"
+        r"$95^{\mathrm{th}}$ Pct $= " f"{np.percentile(gt_stds, 95):.2f}\\%$"
+    )
+    ax1.text(0.96, 0.06, uq_card,
+             transform=ax1.transAxes, fontsize=8.8, va='bottom', ha='right',
+             bbox=dict(boxstyle='round,pad=0.45', facecolor='white',
+                       edgecolor='#D1D5DB', linewidth=1.1, alpha=0.94))
+
+    # ── Panel B: Histogram & Density Distribution ──
+    counts, bins, _ = ax2.hist(gt_stds, bins=20, density=True, color='#3B82F6',
+                               edgecolor='white', lw=0.8, alpha=0.65, label=r'Empirical Frequency')
+
+    # Smooth KDE line
+    kde = gaussian_kde(gt_stds)
+    x_kde = np.linspace(min(gt_stds) - 2, max(gt_stds) + 2, 300)
+    ax2.plot(x_kde, kde(x_kde), color='#1E3A8A', lw=2.2, label=r'Kernel Density Estimate')
+
+    mean_s = gt_stds.mean()
+    p95_s  = np.percentile(gt_stds, 95)
+    ax2.axvline(mean_s, color='#DC2626', lw=1.8, ls='--',
+                label=r'Mean Uncertainty ($\mu = ' f'{mean_s:.2f}\\%$)')
+    ax2.axvline(p95_s, color='#D97706', lw=1.6, ls=':',
+                label=r'$95^{\mathrm{th}}$ Percentile ($' f'{p95_s:.2f}\\%$)')
+
+    ax2.set_xlim(min(gt_stds) - 3, max(gt_stds) + 3)
+    ax2.set_xlabel(r"Epistemic Uncertainty, $\sigma$ (%)", fontsize=11.0, fontweight='bold')
+    ax2.set_ylabel(r"Probability Density", fontsize=11.0, fontweight='bold')
+    ax2.set_title(r"(b) Uncertainty Dispersion & Confidence Envelope", fontsize=11.5, fontweight='bold', pad=8)
+    ax2.legend(fontsize=8.8, loc='upper right', framealpha=0.95, edgecolor='#D1D5DB')
+    ax2.grid(True, linestyle='--', alpha=0.35, color='#CBD5E1')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     path = os.path.join(OUT_DIR, "figure7_uncertainty_bands.png")
     fig.savefig(path, dpi=DPI, bbox_inches='tight')
     plt.close(fig)
