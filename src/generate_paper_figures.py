@@ -857,7 +857,7 @@ def generate_figure5(data, models):
 
 
 def generate_figure6(data, models):
-    print("\n[Figure 6] Multi-Molecule Atom Attribution Atlas ...")
+    print("\n[Figure 6] Multi-Molecule Atom Attribution Atlas (Publication Grade) ...")
     try:
         from rdkit import Chem
         from rdkit.Chem.Draw import rdMolDraw2D
@@ -868,71 +868,104 @@ def generate_figure6(data, models):
 
     from src.molecule_feature_importance import MoleculeAttributionAnalyzer
     from matplotlib.cm import ScalarMappable
+    from matplotlib.colors import Normalize
 
-    MOLECULES = {
-        "Ibuprofen\n(Anti-inflammatory)\nHigh Rejection ~90%": (
-            "CC(C)Cc1ccc(cc1)C(C)C(=O)O", -1.0, 1.45),
-        "Caffeine\n(Stimulant)\nModerate Rejection ~60%": (
-            "Cn1cnc2c1c(=O)n(c(=O)n2C)C", 0.0, -0.07),
-        "Atrazine\n(Herbicide)\nVariable Rejection ~55%": (
-            "CC(C)Nc1nc(Cl)nc(NC)n1", 0.0, 2.61),
-    }
+    MOLECULES = [
+        {
+            'title': '(a) Ibuprofen',
+            'sub': 'Pharmaceutical | Carboxylate Donnan Repulsion',
+            'rej': 'Observed Rejection: ~91%',
+            'smiles': 'CC(C)Cc1ccc(cc1)C(C)C(=O)O',
+            'charge': -1.0, 'log_d': 1.45
+        },
+        {
+            'title': '(b) Caffeine',
+            'sub': 'Stimulant | Dipole Permeation',
+            'rej': 'Observed Rejection: ~60%',
+            'smiles': 'Cn1cnc2c1c(=O)n(c(=O)n2C)C',
+            'charge': 0.0, 'log_d': -0.07
+        },
+        {
+            'title': '(c) Atrazine',
+            'sub': 'Herbicide | Chlorotriazine Steric Sieving',
+            'rej': 'Observed Rejection: ~55%',
+            'smiles': 'CC(C)Nc1nc(Cl)nc(NC)n1',
+            'charge': 0.0, 'log_d': 2.61
+        },
+        {
+            'title': '(d) Sulfamethoxazole',
+            'sub': 'Antibiotic | Sulfonamide Size Exclusion',
+            'rej': 'Observed Rejection: ~88%',
+            'smiles': 'Cc1cc(NS(=O)(=O)c2ccc(N)cc2)no1',
+            'charge': 0.0, 'log_d': 0.89
+        }
+    ]
 
     analyzer = MoleculeAttributionAnalyzer()
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    fig.suptitle(
-        "PhysiChem-GT: Atom-Level Integrated Gradients Attribution Maps\n"
-        "(Red = Strong membrane interaction | White = Minimal contribution)",
-        fontsize=12, fontweight='bold', y=1.03)
+    plt.rcdefaults()
+
+    fig, axes = plt.subplots(1, 4, figsize=(18.0, 5.0), dpi=DPI)
+    fig.suptitle('PhysiChem-GT: Atom-Level Integrated Gradients Attribution Atlas on Molecular Graphs',
+                 fontsize=13.0, fontweight='bold', y=0.98)
 
     cmap_ig = plt.get_cmap('Reds')
     norm_ig = Normalize(vmin=0, vmax=1)
 
-    for ax, (lbl, (smiles, charge, log_d)) in zip(axes, MOLECULES.items()):
-        feat_row     = analyzer.X_ref[0].copy()
-        feat_row[16] = charge
-        feat_row[18] = log_d
+    for ax, info in zip(axes, MOLECULES):
+        feat_row = analyzer.X_ref[0].copy()
+        feat_row[16] = info['charge']
+        feat_row[18] = info['log_d']
 
-        atom_scores, mol = analyzer.compute_atom_importance(smiles, feat_row)
+        atom_scores, mol = analyzer.compute_atom_importance(info['smiles'], feat_row)
         if mol is None:
-            ax.set_visible(False); continue
+            ax.set_visible(False)
+            continue
 
-        drawer = rdMolDraw2D.MolDraw2DCairo(500, 380)
-        drawer.drawOptions().bondLineWidth = 2.5
-        drawer.drawOptions().padding       = 0.12
+        drawer = rdMolDraw2D.MolDraw2DCairo(600, 480)
+        opts = drawer.drawOptions()
+        opts.bondLineWidth = 2.6
+        opts.padding = 0.14
+        opts.clearBackground = True
 
-        atom_colors = {}; highlight_radii = {}
+        atom_colors = {}
+        highlight_radii = {}
         for i, s in enumerate(atom_scores):
             if i < mol.GetNumAtoms():
                 rgba = cmap_ig(norm_ig(float(s)))
-                atom_colors[i]    = (float(rgba[0]), float(rgba[1]), float(rgba[2]))
-                highlight_radii[i] = float(0.30 + 0.25 * float(s))
+                atom_colors[i] = (float(rgba[0]), float(rgba[1]), float(rgba[2]))
+                highlight_radii[i] = float(0.32 + 0.22 * float(s))
 
         drawer.DrawMolecule(
             mol,
             highlightAtoms=list(atom_colors.keys()),
             highlightAtomColors=atom_colors,
             highlightAtomRadii=highlight_radii,
-            highlightBonds=[],
+            highlightBonds=[]
         )
         drawer.FinishDrawing()
 
         img = Image.open(io.BytesIO(drawer.GetDrawingText()))
         ax.imshow(img)
-        ax.set_title(lbl, fontsize=10, fontweight='bold', pad=8)
+        
+        ax.set_title(info['title'] + '\n' + info['sub'] + '\n' + info['rej'],
+                     fontsize=9.5, fontweight='bold', pad=10, linespacing=1.35)
         ax.axis('off')
 
+    fig.subplots_adjust(left=0.03, right=0.91, top=0.82, bottom=0.06, wspace=0.15)
+
+    # Dedicated isolated colorbar axis on the far right
+    cax = fig.add_axes([0.93, 0.18, 0.014, 0.60])
     sm = ScalarMappable(cmap='Reds', norm=norm_ig)
     sm.set_array([])
-    cbar = fig.colorbar(sm, ax=axes, orientation='vertical',
-                        fraction=0.015, pad=0.02, shrink=0.75)
-    cbar.set_label("Attribution Score (Integrated Gradients)", fontsize=11)
-    cbar.set_ticks([0, 0.25, 0.5, 0.75, 1.0])
-    cbar.set_ticklabels(['Low', '', 'Medium', '', 'High'])
+    cbar = fig.colorbar(sm, cax=cax, orientation='vertical')
+    cbar.set_label('Integrated Gradients Attribution ($\\alpha_i$)\n(Impact on Membrane Rejection)',
+                   fontsize=9.5, fontweight='bold', labelpad=10)
+    cbar.set_ticks([0.0, 0.25, 0.50, 0.75, 1.0])
+    cbar.set_ticklabels(['Minimal (0.0)', 'Low (0.25)', 'Moderate (0.50)', 'High (0.75)', 'Critical (1.0)'])
+    cbar.ax.tick_params(labelsize=8.5)
 
-    plt.tight_layout()
     path = os.path.join(OUT_DIR, "figure6_atom_attribution_atlas.png")
-    fig.savefig(path, dpi=DPI, bbox_inches='tight')
+    fig.savefig(path, dpi=DPI)
     plt.close(fig)
     print(f"  -> {path}")
 
