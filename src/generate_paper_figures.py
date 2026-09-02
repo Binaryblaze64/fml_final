@@ -587,14 +587,14 @@ def generate_figure3():
 
     # Hyperparameter Inset
     param_card = (
-        "\\textbf{Optimization}\n"
+        r"$\mathbf{Optimization\ Details}$" "\n"
         "Optimizer: AdamW\n"
         r"$\mathrm{lr}_0 = 10^{-3}$ (Cosine Annealing)" "\n"
         r"Weight Decay $= 10^{-3}$" "\n"
-        r"Batch Size $= 64$"
+        "Batch Size $= 64$"
     )
     ax1.text(0.04, 0.06, param_card,
-             transform=ax1.transAxes, fontsize=9.0, va='bottom', ha='left',
+             transform=ax1.transAxes, fontsize=9.2, va='bottom', ha='left',
              bbox=dict(boxstyle='round,pad=0.45', facecolor='white',
                        edgecolor='#D1D5DB', linewidth=1.1, alpha=0.94))
 
