@@ -642,7 +642,7 @@ def generate_figure7(inf):
     ss  = gt_stds[idx]
     st  = y_true[idx]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.6), dpi=DPI)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.8), dpi=DPI)
     fig.suptitle(r"Predictive Epistemic Uncertainty Quantification via Monte Carlo Dropout ($N_{\mathrm{MC}} = 50$ Passes)",
                  fontsize=13, fontweight='bold', y=0.98)
 
@@ -651,25 +651,27 @@ def generate_figure7(inf):
                      alpha=0.18, color='#93C5FD', label=r'$\pm 2\sigma$ ($95\%$ Confidence Interval)')
     ax1.fill_between(sx, np.clip(sp - ss, 0, 100), np.clip(sp + ss, 0, 100),
                      alpha=0.35, color='#3B82F6', label=r'$\pm 1\sigma$ ($68\%$ Confidence Interval)')
-    ax1.plot(sx, sp, color='#1E3A8A', lw=2.2, label=r'Predicted Rejection, $R_{\mathrm{pred}}$', zorder=4)
+    ax1.plot(sx, sp, color='#1E3A8A', lw=2.2, label=r'Predicted Rejection ($R_{\mathrm{pred}}$)', zorder=4)
 
-    sc = ax1.scatter(sx, st, c=ss, cmap='plasma', s=24, alpha=0.85,
-                     edgecolors='#1E293B', linewidths=0.4, zorder=5, label=r'Experimental, $R_{\mathrm{exp}}$')
+    sc = ax1.scatter(sx, st, c=ss, cmap='plasma', s=26, alpha=0.85,
+                     edgecolors='#1E293B', linewidths=0.4, zorder=5, label=r'Experimental ($R_{\mathrm{exp}}$)')
 
     ax1.set_xlim(-2, len(sx) + 2)
-    ax1.set_ylim(-5, 128)
+    ax1.set_ylim(-4, 106)
     ax1.set_yticks([0, 20, 40, 60, 80, 100])
     ax1.set_xlabel(r"Evaluated Test Molecules (Ranked by Predicted Rejection)", fontsize=11.0, fontweight='bold')
     ax1.set_ylabel(r"Membrane Rejection Efficiency (%)", fontsize=11.0, fontweight='bold')
     ax1.set_title(r"(a) Ranked Confidence Intervals ($N_{\mathrm{test}} = 162$)", fontsize=11.5, fontweight='bold', pad=8)
-    ax1.legend(fontsize=8.8, loc='upper left', ncol=2, framealpha=0.95, edgecolor='#D1D5DB')
+
+    # Lower right quadrant is completely clear of all data points
+    ax1.legend(fontsize=9.0, loc='lower right', framealpha=0.95, edgecolor='#D1D5DB')
     ax1.grid(True, linestyle='--', alpha=0.35, color='#CBD5E1')
 
     # Colorbar on Panel A for point uncertainty
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes("right", size="3.5%", pad=0.10)
     cb = fig.colorbar(sc, cax=cax)
-    cb.set_label(r'Epistemic Uncertainty, $\sigma$ (%)', fontsize=9.0)
+    cb.set_label(r'Epistemic Uncertainty, $\sigma$ (%)', fontsize=9.2)
     cb.ax.tick_params(labelsize=8.0)
 
     # ── Panel B: Histogram & Density Distribution ──
@@ -681,12 +683,12 @@ def generate_figure7(inf):
     x_kde = np.linspace(min(gt_stds) - 2, max(gt_stds) + 2, 300)
     ax2.plot(x_kde, kde(x_kde), color='#1E3A8A', lw=2.2, label=r'Kernel Density Estimate')
 
-    mean_s = gt_stds.mean()
-    p95_s  = np.percentile(gt_stds, 95)
+    mean_s = float(gt_stds.mean())
+    p95_s  = float(np.percentile(gt_stds, 95))
     ax2.axvline(mean_s, color='#DC2626', lw=1.8, ls='--',
-                label=r'Mean Uncertainty ($\mu = ' f'{mean_s:.2f}\\%$)')
+                label=rf"Mean Uncertainty ($\mu = {mean_s:.2f}\%$)")
     ax2.axvline(p95_s, color='#D97706', lw=1.6, ls=':',
-                label=r'$95^{\mathrm{th}}$ Percentile ($' f'{p95_s:.2f}\\%$)')
+                label=rf"95th Percentile ($\sigma_{{95}} = {p95_s:.2f}\%$)")
 
     max_dens = max(kde(x_kde).max(), counts.max())
     ax2.set_ylim(0, max_dens * 1.35)
@@ -694,7 +696,7 @@ def generate_figure7(inf):
     ax2.set_xlabel(r"Epistemic Uncertainty, $\sigma$ (%)", fontsize=11.0, fontweight='bold')
     ax2.set_ylabel(r"Probability Density", fontsize=11.0, fontweight='bold')
     ax2.set_title(r"(b) Uncertainty Dispersion & Confidence Envelope", fontsize=11.5, fontweight='bold', pad=8)
-    ax2.legend(fontsize=8.8, loc='upper right', framealpha=0.95, edgecolor='#D1D5DB')
+    ax2.legend(fontsize=9.0, loc='upper right', framealpha=0.95, edgecolor='#D1D5DB')
     ax2.grid(True, linestyle='--', alpha=0.35, color='#CBD5E1')
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
