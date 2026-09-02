@@ -1,0 +1,28 @@
+# Base paper checkpoints
+/checkpoint/best_GrowTableFingerPrint.pth
+/checkpoint/best_GrowTableGraphImage_0623.pth
+/checkpoint/best_GrowTableGraphNN_0606.pth
+/checkpoint/best_GrowTableGraphNN_0912.pth
+/checkpoint/best_GrowTableImage_0304.pth
+
+# Our model checkpoints (large binary files — download separately)
+/checkpoint/*.pth
+/checkpoint/*.pkl
+
+# Processed PyG data cache
+/data/processed/
+/data/raw/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Virtual env
+venv/
+.env/
+
+# OS
+.DS_Store
+Thumbs.db

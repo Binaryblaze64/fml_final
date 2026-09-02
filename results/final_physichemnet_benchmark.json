@@ -1,0 +1,17 @@
+{
+  "model_name": "PhysiChem-GT (Physics-Informed Chemical Graph Transformer)",
+  "note": "All metrics live-computed by actual model inference on held-out test set.",
+  "single_split": {
+    "test_r2": 0.7606766223907471,
+    "test_rmse": 14.194019315407877,
+    "test_mae": 8.741507530212402
+  },
+  "base_paper_comparison": {
+    "paper_r2": 0.9014,
+    "paper_rmse": 9.1118,
+    "paper_mae": 6.1691,
+    "r2_gain": -0.1407233776092529,
+    "rmse_reduction": -5.082219315407876,
+    "mae_reduction": -2.572407530212402
+  }
+}

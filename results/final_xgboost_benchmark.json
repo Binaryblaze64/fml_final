@@ -1,0 +1,15 @@
+{
+  "model_name": "PhysiChem-XGB (Physics-Enhanced Gradient Boosted Trees)",
+  "single_split": {
+    "test_r2": 0.9127368718890172,
+    "test_rmse": 8.570935079057577,
+    "test_mae": 5.443988000238302
+  },
+  "5fold_cv": {
+    "mean_r2": 0.8517315714949818,
+    "std_r2": 0.02454353828968274,
+    "peak_r2": 0.8773898285771241,
+    "mean_rmse": 10.56372738919266,
+    "mean_mae": 6.2791672548228705
+  }
+}

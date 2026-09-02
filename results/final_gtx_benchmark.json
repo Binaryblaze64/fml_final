@@ -1,0 +1,24 @@
+{
+  "model_name": "PhysiChem-GTX (Physics-Gated MoE: Graph Transformer + Monotonic Booster)",
+  "routing_strategy": "Adaptive Sigmoidal Physics Gating g(lambda, psi)",
+  "single_split": {
+    "test_r2": 0.9129955158686641,
+    "test_rmse": 8.558223720410176,
+    "test_mae": 5.518194107397458
+  },
+  "5fold_cv": {
+    "mean_r2": 0.8585337804452825,
+    "std_r2": 0.02244916522660114,
+    "peak_r2": 0.8819232100375878,
+    "mean_rmse": 10.321619466730944,
+    "mean_mae": 6.165828400534349
+  },
+  "literature_comparison": {
+    "paper_r2": 0.9014,
+    "paper_rmse": 9.1118,
+    "paper_mae": 6.1691,
+    "r2_gain": 0.011595515868664141,
+    "rmse_reduction": 0.5535762795898247,
+    "mae_reduction": 0.650905892602542
+  }
+}
