@@ -675,8 +675,8 @@ def generate_figure7(inf):
 # ==============================================================================
 
 def generate_figure5(data, models):
-    print("\n[Figure 5] SHAP Beeswarm Feature Importance (ACS ES&T Engineering Style) ...")
-    from matplotlib.colors import LinearSegmentedColormap
+    print("\n[Figure 5] SHAP Beeswarm Feature Importance (ACS ES&T Engineering Exact Style) ...")
+    from matplotlib.colors import LinearSegmentedColormap, Normalize
     import xgboost as xgb
     from rdkit import Chem, RDLogger
     from rdkit.Chem import AllChem
@@ -722,73 +722,95 @@ def generate_figure5(data, models):
     mean_abs = np.abs(shap_combined).mean(axis=0)
     order = np.argsort(mean_abs)[::-1]
 
-    # Custom SHAP Beeswarm Palette: Blue (Low) -> Purple -> Hot Pink / Red (High)
-    shap_cmap = LinearSegmentedColormap.from_list('shap_custom', ['#008BFB', '#990099', '#FF0051'], N=256)
+    # Official SHAP red-blue gradient
+    cdict = {
+        'red':   ((0.0, 0.0, 0.0), (0.5, 0.6, 0.6), (1.0, 1.0, 1.0)),
+        'green': ((0.0, 0.54, 0.54), (0.5, 0.0, 0.0), (1.0, 0.0, 0.0)),
+        'blue':  ((0.0, 0.98, 0.98), (0.5, 0.6, 0.6), (1.0, 0.32, 0.32))
+    }
+    shap_cmap = LinearSegmentedColormap('shap_official', cdict, N=256)
 
-    fig, ax = plt.subplots(figsize=(11.5, 9.5), dpi=DPI)
+    # Use serif font matching ACS ES&T
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Times New Roman', 'DejaVu Serif', 'Liberation Serif', 'Georgia']
+    plt.rcParams['mathtext.fontset'] = 'stix'
+
+    fig = plt.figure(figsize=(12, 8.8), dpi=DPI)
+    ax = fig.add_axes([0.28, 0.10, 0.60, 0.82])
+    cax = fig.add_axes([0.91, 0.12, 0.012, 0.78])
+
     n_samples = shap_combined.shape[0]
     n_feats = len(order)
 
+    # True beeswarm stacking
     for row_idx, f_idx in enumerate(reversed(order)):
         y_pos = row_idx
         sv = shap_combined[:, f_idx]
         fv = feat_combined[:, f_idx]
 
-        f_min, f_max = np.percentile(fv, 2), np.percentile(fv, 98)
+        f_min, f_max = np.percentile(fv, 5), np.percentile(fv, 95)
         if f_max > f_min:
             norm_val = np.clip((fv - f_min) / (f_max - f_min), 0, 1)
         else:
             norm_val = np.full_like(fv, 0.5)
 
-        sort_i = np.argsort(sv)
-        sv_s = sv[sort_i]
-        norm_s = norm_val[sort_i]
+        sort_idx = np.argsort(sv)
+        sv_sorted = sv[sort_idx]
+        norm_sorted = norm_val[sort_idx]
+
+        nbins = 120
+        hist, bin_edges = np.histogram(sv_sorted, bins=nbins)
+        bin_assignments = np.digitize(sv_sorted, bin_edges) - 1
+        bin_assignments = np.clip(bin_assignments, 0, nbins - 1)
 
         y_offsets = np.zeros(n_samples)
-        bins = np.linspace(sv_s.min() - 1e-5, sv_s.max() + 1e-5, 80)
-        bin_idx = np.digitize(sv_s, bins)
-        for b in np.unique(bin_idx):
-            mask = (bin_idx == b)
-            count = np.sum(mask)
-            if count > 1:
-                offsets = np.linspace(-0.28, 0.28, count)
-                offsets += np.random.RandomState(42).normal(0, 0.02, count)
-                y_offsets[mask] = np.clip(offsets, -0.35, 0.35)
+        for b in range(nbins):
+            pts_in_b = np.where(bin_assignments == b)[0]
+            k = len(pts_in_b)
+            if k == 1:
+                y_offsets[pts_in_b[0]] = 0
+            elif k > 1:
+                spread = min(0.32, k * 0.012)
+                y_offsets[pts_in_b] = np.linspace(-spread, spread, k)
 
-        ax.axhline(y_pos, color='#E5E7EB', linestyle=':', lw=0.8, zorder=1)
-        ax.scatter(sv_s, y_pos + y_offsets, c=norm_s, cmap=shap_cmap,
-                   s=18, alpha=0.75, edgecolors='none', zorder=3)
+        ax.axhline(y_pos, color='#E5E7EB', linestyle=':', lw=0.7, zorder=1)
+        ax.scatter(sv_sorted, y_pos + y_offsets, c=norm_sorted, cmap=shap_cmap,
+                   s=15, alpha=0.88, edgecolors='none', zorder=3)
 
-    ax.axvline(0, color='#4B5563', linestyle='-', lw=1.2, zorder=2)
+    ax.axvline(0, color='#6B7280', linestyle='-', lw=1.2, zorder=2)
 
     ordered_names = [feat_names[i] for i in reversed(order)]
     ax.set_yticks(range(n_feats))
-    ax.set_yticklabels(ordered_names, fontsize=10, fontweight='medium')
-    ax.set_xlabel('SHAP value (impact on model output)', fontsize=11.5, fontweight='bold', labelpad=8)
-    ax.set_title('SHAP Feature Importance (Including Molecular Graph)', fontsize=13, fontweight='bold', pad=14)
+    ax.set_yticklabels(ordered_names, fontsize=11, fontfamily='serif')
+    ax.set_xlabel('SHAP value (impact on model output)', fontsize=12, fontfamily='serif', fontweight='normal', labelpad=8)
+    ax.set_title('SHAP Feature Importance (Including Molecular Graph)', fontsize=13.5, fontfamily='serif', fontweight='normal', pad=14)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_color('#374151')
+    ax.spines['bottom'].set_color('#1F2937')
     ax.spines['bottom'].set_linewidth(1.0)
-    ax.tick_params(left=False)
+    ax.tick_params(left=False, direction='out', length=4, labelsize=10.5)
 
-    sm = plt.cm.ScalarMappable(cmap=shap_cmap, norm=Normalize(0, 1))
-    sm.set_array([])
-    cbar = fig.colorbar(sm, ax=ax, orientation='vertical', fraction=0.018, pad=0.03, aspect=32)
-    cbar.set_ticks([0, 1])
-    cbar.set_ticklabels(['Low', 'High'], fontsize=9.5, fontweight='medium')
-    cbar.set_label('Feature value', fontsize=10.5, fontweight='medium', labelpad=8)
-    cbar.outline.set_visible(False)
+    norm = Normalize(0, 1)
+    matplotlib.colorbar.ColorbarBase(cax, cmap=shap_cmap, norm=norm, orientation='vertical')
+    cax.set_yticks([])
+    cax.text(0.5, 1.02, 'High', transform=cax.transAxes, ha='center', va='bottom', fontsize=10.5, fontfamily='serif')
+    cax.text(0.5, -0.02, 'Low', transform=cax.transAxes, ha='center', va='top', fontsize=10.5, fontfamily='serif')
+    cax.set_ylabel('Feature value', fontsize=11, fontfamily='serif', labelpad=14, rotation=270, va='bottom')
+    cax.spines['top'].set_visible(False)
+    cax.spines['right'].set_visible(False)
+    cax.spines['bottom'].set_visible(False)
+    cax.spines['left'].set_visible(False)
 
-    plt.tight_layout()
     save_path = os.path.join(OUT_DIR, "figure5_shap_importance.png")
-    fig.savefig(save_path, dpi=DPI, bbox_inches='tight')
+    fig.savefig(save_path, dpi=DPI)
     plt.close(fig)
     print(f"  -> Saved SHAP Beeswarm to: {save_path}")
 
-    # Export ranking CSV
+    # Reset font to sans-serif for remaining figures
+    plt.rcParams['font.family'] = 'DejaVu Sans'
+
     feat_df = pd.DataFrame({
         'Feature': [feat_names[i] for i in order],
         'Mean_Absolute_SHAP': [mean_abs[i] for i in order]
