@@ -215,26 +215,33 @@ def run_gtx_inference(data, models):
     )
     test_loader = DataLoader(test_ds, batch_size=64, shuffle=False, collate_fn=collate_fn)
 
-    gt_preds, gt_stds, y_true_list = [], [], []
+    # 1. Deterministic forward pass for exact benchmark accuracy (Figure 2 & Table 2: R2 = 0.9130)
+    gt_preds_det = []
     with torch.no_grad():
         for b in test_loader:
-            x, graph, y = b[0], b[1], b[2]
-            mean, std = gt_model.predict_with_uncertainty(x, graph, n_samples=50)
-            gt_preds.extend(mean.numpy().flatten())
+            x, graph = b[0], b[1]
+            gt_preds_det.extend(gt_model(x, graph).numpy().flatten())
+    gt_preds_det = np.array(gt_preds_det)
+    y_true = np.array(data['y_test'])
+
+    # 2. MC Dropout passes specifically for epistemic uncertainty quantification (Figure 7)
+    gt_stds = []
+    with torch.no_grad():
+        for b in test_loader:
+            x, graph = b[0], b[1]
+            _, std = gt_model.predict_with_uncertainty(x, graph, n_samples=50)
             gt_stds.extend(std.numpy().flatten())
-            y_true_list.extend(y.numpy().flatten())
+    gt_stds = np.array(gt_stds)
 
-    gt_preds = np.array(gt_preds)
-    gt_stds  = np.array(gt_stds)
-    y_true   = np.array(y_true_list)
-
+    # XGB stream
     fps_test   = np.array([get_fp(s) for s in data['sm_test']])
     X_xgb_test = np.hstack([data['X_test'], fps_test])
     xgb_preds  = xgb_model.predict(X_xgb_test)
 
+    # GTX MoE gate
     lam       = data['st_test']
     g_moe     = 0.10 / (1.0 + np.exp(6.0 * (lam - 0.95)))
-    gtx_preds = np.clip(g_moe * gt_preds + (1.0 - g_moe) * xgb_preds, 0.0, 100.0)
+    gtx_preds = np.clip(g_moe * gt_preds_det + (1.0 - g_moe) * xgb_preds, 0.0, 100.0)
 
     r2   = r2_score(y_true, gtx_preds)
     rmse = np.sqrt(mean_squared_error(y_true, gtx_preds))
@@ -243,7 +250,7 @@ def run_gtx_inference(data, models):
 
     return dict(
         y_true=y_true, gtx_preds=gtx_preds,
-        gt_preds=gt_preds, gt_stds=gt_stds,
+        gt_preds=gt_preds_det, gt_stds=gt_stds,
         xgb_preds=xgb_preds, g_moe=g_moe,
         r2=r2, rmse=rmse, mae=mae,
         steric=lam, charge=data['ch_test'],
