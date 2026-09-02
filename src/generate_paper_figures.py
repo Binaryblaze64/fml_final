@@ -675,17 +675,126 @@ def generate_figure7(inf):
 # ==============================================================================
 
 def generate_figure5(data, models):
-    print("\n[Figure 5] Global Feature Importance ...")
-    from src.molecule_feature_importance import (
-        MoleculeAttributionAnalyzer, plot_global_feature_importance
-    )
-    analyzer = MoleculeAttributionAnalyzer()
-    feat_df  = analyzer.compute_global_feature_importance(n_samples=300)
-    save_path = os.path.join(OUT_DIR, "figure5_shap_importance.png")
-    plot_global_feature_importance(feat_df, save_path)
+    print("\n[Figure 5] SHAP Beeswarm Feature Importance (ACS ES&T Engineering Style) ...")
+    from matplotlib.colors import LinearSegmentedColormap
+    import xgboost as xgb
+    from rdkit import Chem, RDLogger
+    from rdkit.Chem import AllChem
+    RDLogger.DisableLog('rdApp.*')
 
+    def get_fp(smi, n=256):
+        mol = Chem.MolFromSmiles(str(smi))
+        if mol is None: return np.zeros(n, dtype=np.float32)
+        return np.array(AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=n), dtype=np.float32)
+
+    X_phys = data['X_all']
+    smiles = data['smiles_all']
+    fps = np.array([get_fp(s, 256) for s in smiles])
+    X_all = np.hstack([X_phys, fps])
+
+    xgb_model = models['xgb_model']
+    booster = xgb_model.get_booster() if hasattr(xgb_model, 'get_booster') else xgb_model
+
+    dmat = xgb.DMatrix(X_all)
+    shap_raw = booster.predict(dmat, pred_contribs=True)[:, :-1]
+
+    # Aggregate 24 tabular + 1 Molecular Graph feature
+    shap_24 = shap_raw[:, :24]
+    shap_graph = shap_raw[:, 24:].sum(axis=1, keepdims=True)
+    shap_combined = np.hstack([shap_24, shap_graph])
+
+    feat_24 = X_all[:, :24]
+    feat_graph = X_all[:, 24:].sum(axis=1, keepdims=True)
+    feat_combined = np.hstack([feat_24, feat_graph])
+
+    feat_names = [
+        'Pure water flux (L/(m²·h·bar))', 'Pressure (bar)', 'pH', 'Temperature (°C)',
+        'Filtration duration (h)', 'TrOC concentration (mg/L)',
+        'MW (Da)', 'MWCO (Da)', 'Min projection (nm)', 'Max projection (nm)',
+        'Molecular radius (nm)', 'Pore radius (nm)', 'pKa1',
+        'Zeta potential (mV)', 'log Kow', 'Contact angle (°)',
+        'Molecular charge', 'Charge product', 'log D',
+        'Steric Ratio (λ)', 'Ferry-Renkin (Φ)',
+        'Hydraulic Permeability (Lp)', 'Donnan Index (Ψ)', 'Hydrophobic Affinity (H)',
+        'Molecular Graph'
+    ]
+
+    mean_abs = np.abs(shap_combined).mean(axis=0)
+    order = np.argsort(mean_abs)[::-1]
+
+    # Custom SHAP Beeswarm Palette: Blue (Low) -> Purple -> Hot Pink / Red (High)
+    shap_cmap = LinearSegmentedColormap.from_list('shap_custom', ['#008BFB', '#990099', '#FF0051'], N=256)
+
+    fig, ax = plt.subplots(figsize=(11.5, 9.5), dpi=DPI)
+    n_samples = shap_combined.shape[0]
+    n_feats = len(order)
+
+    for row_idx, f_idx in enumerate(reversed(order)):
+        y_pos = row_idx
+        sv = shap_combined[:, f_idx]
+        fv = feat_combined[:, f_idx]
+
+        f_min, f_max = np.percentile(fv, 2), np.percentile(fv, 98)
+        if f_max > f_min:
+            norm_val = np.clip((fv - f_min) / (f_max - f_min), 0, 1)
+        else:
+            norm_val = np.full_like(fv, 0.5)
+
+        sort_i = np.argsort(sv)
+        sv_s = sv[sort_i]
+        norm_s = norm_val[sort_i]
+
+        y_offsets = np.zeros(n_samples)
+        bins = np.linspace(sv_s.min() - 1e-5, sv_s.max() + 1e-5, 80)
+        bin_idx = np.digitize(sv_s, bins)
+        for b in np.unique(bin_idx):
+            mask = (bin_idx == b)
+            count = np.sum(mask)
+            if count > 1:
+                offsets = np.linspace(-0.28, 0.28, count)
+                offsets += np.random.RandomState(42).normal(0, 0.02, count)
+                y_offsets[mask] = np.clip(offsets, -0.35, 0.35)
+
+        ax.axhline(y_pos, color='#E5E7EB', linestyle=':', lw=0.8, zorder=1)
+        ax.scatter(sv_s, y_pos + y_offsets, c=norm_s, cmap=shap_cmap,
+                   s=18, alpha=0.75, edgecolors='none', zorder=3)
+
+    ax.axvline(0, color='#4B5563', linestyle='-', lw=1.2, zorder=2)
+
+    ordered_names = [feat_names[i] for i in reversed(order)]
+    ax.set_yticks(range(n_feats))
+    ax.set_yticklabels(ordered_names, fontsize=10, fontweight='medium')
+    ax.set_xlabel('SHAP value (impact on model output)', fontsize=11.5, fontweight='bold', labelpad=8)
+    ax.set_title('SHAP Feature Importance (Including Molecular Graph)', fontsize=13, fontweight='bold', pad=14)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color('#374151')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.tick_params(left=False)
+
+    sm = plt.cm.ScalarMappable(cmap=shap_cmap, norm=Normalize(0, 1))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, orientation='vertical', fraction=0.018, pad=0.03, aspect=32)
+    cbar.set_ticks([0, 1])
+    cbar.set_ticklabels(['Low', 'High'], fontsize=9.5, fontweight='medium')
+    cbar.set_label('Feature value', fontsize=10.5, fontweight='medium', labelpad=8)
+    cbar.outline.set_visible(False)
+
+    plt.tight_layout()
+    save_path = os.path.join(OUT_DIR, "figure5_shap_importance.png")
+    fig.savefig(save_path, dpi=DPI, bbox_inches='tight')
+    plt.close(fig)
+    print(f"  -> Saved SHAP Beeswarm to: {save_path}")
+
+    # Export ranking CSV
+    feat_df = pd.DataFrame({
+        'Feature': [feat_names[i] for i in order],
+        'Mean_Absolute_SHAP': [mean_abs[i] for i in order]
+    })
     csv_path = os.path.join(OUT_DIR, "figure5_feature_importances.csv")
-    feat_df.sort_values('Importance', ascending=False).to_csv(csv_path, index=False)
+    feat_df.to_csv(csv_path, index=False)
     print(f"  -> Ranking CSV: {csv_path}")
 
 
