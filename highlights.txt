@@ -1,0 +1,7 @@
+Research Highlights:
+
+• Dual-stream framework couples Graph Transformer with monotonic trees via steric gate.
+• Attains top benchmark accuracy (R² = 0.9130, RMSE = 8.56%) on MemTrOC corpus (N = 1,618).
+• Embeds 5 transport descriptors (λ, Φ, Lp, Ψ, H) into features and loss constraints.
+• Delivers calibrated uncertainty quantification via MC dropout and residual variance.
+• Reconciles macro-scale TreeSHAP with sub-molecular Integrated Gradients attributions.
