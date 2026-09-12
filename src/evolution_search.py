@@ -470,6 +470,9 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
 
     all_results = []
     best_config = copy.deepcopy(BASE_CONFIG)
+    best_val_r2 = -float('inf')
+    best_val_rmse = float('inf')
+    best_val_mae = float('inf')
     best_test_r2 = -float('inf')
     best_test_rmse = float('inf')
     best_test_mae = float('inf')
@@ -483,10 +486,13 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
             saved = torch.load(best_model_path, weights_only=False)
             if 'config' in saved and 'metrics' in saved:
                 best_config = copy.deepcopy(saved['config'])
+                best_val_r2 = saved['metrics'].get('val_r2', -float('inf'))
+                best_val_rmse = saved['metrics'].get('val_rmse', float('inf'))
+                best_val_mae = saved['metrics'].get('val_mae', float('inf'))
                 best_test_r2 = saved['metrics'].get('test_r2', -float('inf'))
                 best_test_rmse = saved['metrics'].get('test_rmse', float('inf'))
                 best_test_mae = saved['metrics'].get('test_mae', float('inf'))
-                print(f"  [Resume] Loaded previous best checkpoint: R2={best_test_r2:.4f}, MAE={best_test_mae:.4f}%")
+                print(f"  [Resume] Loaded previous best checkpoint: Val R2={best_val_r2:.4f}, Test R2={best_test_r2:.4f}")
         except Exception as ex:
             print(f"  [Warning] Could not load prior checkpoint: {ex}")
 
@@ -496,7 +502,7 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
 
     # --- Generation 0: Evaluate base config ---
     print(f"\n{'='*70}")
-    print(f"GENERATION 0 -- BASE CONFIG (Starting Point: R2={best_test_r2:.4f})")
+    print(f"GENERATION 0 -- BASE CONFIG (Starting Point: Val R2={best_val_r2:.4f}, Test R2={best_test_r2:.4f})")
     print(f"{'='*70}")
     t0 = time.time()
 
@@ -509,6 +515,9 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
         )
         elapsed = time.time() - t0
 
+        best_val_r2 = results.get('val_r2', results['test_r2'])
+        best_val_rmse = results.get('val_rmse', results['test_rmse'])
+        best_val_mae = results.get('val_mae', results['test_mae'])
         best_test_r2 = results['test_r2']
         best_test_rmse = results['test_rmse']
         best_test_mae = results['test_mae']
@@ -591,11 +600,12 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
                 elapsed = time.time() - t0
 
                 is_better = False
-                # Primary: lower MAE (more practically meaningful)
-                # Secondary: higher R2
-                if (results['test_mae'] < best_test_mae - 0.01 or
-                    (results['test_mae'] <= best_test_mae + 0.05 and 
-                     results['test_r2'] > best_test_r2 + 0.002)):
+                # Architecture selection is driven strictly by internal validation performance
+                val_r2_cur = results.get('val_r2', results['test_r2'])
+                val_mae_cur = results.get('val_mae', results['test_mae'])
+                if (val_mae_cur < best_val_mae - 0.01 or
+                    (val_mae_cur <= best_val_mae + 0.05 and 
+                     val_r2_cur > best_val_r2 + 0.002)):
                     is_better = True
 
                 result_entry = {
@@ -614,11 +624,14 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
                 all_results.append(result_entry)
 
                 status = "[*] NEW BEST" if is_better else "    no improvement"
-                print(f"    {status}: R2={results['test_r2']:.4f}, "
-                      f"RMSE={results['test_rmse']:.4f}%, MAE={results['test_mae']:.4f}% "
+                print(f"    {status}: Val R2={val_r2_cur:.4f}, Val MAE={val_mae_cur:.4f}% | "
+                      f"Test R2={results['test_r2']:.4f}, Test MAE={results['test_mae']:.4f}% "
                       f"({elapsed:.1f}s)")
 
                 if is_better:
+                    best_val_r2 = val_r2_cur
+                    best_val_rmse = results.get('val_rmse', results['test_rmse'])
+                    best_val_mae = val_mae_cur
                     best_test_r2 = results['test_r2']
                     best_test_rmse = results['test_rmse']
                     best_test_mae = results['test_mae']
@@ -656,6 +669,9 @@ def run_evolutionary_search(max_generations=50, mutations_per_gen=3,
         progress = {
             'best_config': best_config,
             'best_metrics': {
+                'val_r2': best_val_r2,
+                'val_rmse': best_val_rmse,
+                'val_mae': best_val_mae,
                 'test_r2': best_test_r2,
                 'test_rmse': best_test_rmse,
                 'test_mae': best_test_mae

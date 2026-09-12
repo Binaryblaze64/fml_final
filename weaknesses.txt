@@ -1,0 +1,579 @@
+2. The biggest problem: your test set is NOT actually untouched
+
+This is the most important finding.
+
+The manuscript states that the 1,618 observations were split into:
+
+1,456 development
+162 untouched test
+
+and that seed 41 was used for strict benchmark comparability.
+
+That would be acceptable if the test set were genuinely untouched.
+
+But the public repository tells a different story.
+
+The evolutionary search explicitly creates a fixed 10% test set:
+
+X_train, X_test, ...
+train_test_split(... test_size=0.1, random_state=41)
+
+and then every candidate architecture is evaluated using that test set.
+
+More importantly, the search decides whether a candidate is better using:
+
+results['test_mae']
+results['test_r2']
+
+and replaces the current best model based on those test metrics.
+
+That means:
+
+Test set → architecture search → model selection → final reported test performance
+
+rather than:
+
+Training → validation/model selection → one-time test evaluation
+
+Why this matters
+
+You searched over many architectures.
+
+If you repeatedly look at the test set and select whichever architecture performs best, you are effectively fitting your architecture to the test set.
+
+Therefore:
+
+R² = 0.9130 is not a clean independent test estimate.
+
+This is a major publication-level methodological issue, not a cosmetic issue.
+
+How to fix it
+
+You need:
+
+Full data
+   │
+   ├── FINAL TEST SET (never touched)
+   │
+   └── Development set
+          │
+          ├── training
+          └── validation / nested CV
+                    │
+                    └── architecture selection
+
+Then after architecture selection is completely frozen:
+
+train final model → evaluate exactly once on final test.
+
+If you want to preserve the current 162-sample split for comparability with Xiao et al., that is fine.
+
+But the NAS must never see those 162 samples.
+
+3. Your cross-validation procedure has another serious issue
+
+The paper says:
+
+"5-fold stratified cross-validation ... across the entire dataset"
+
+and Table 4 gives validation sizes of 324/323.
+
+But the repository's GTX evaluation code does something materially different.
+
+It first creates a 10% holdout, then performs KFold on the remaining development data.
+
+And for the GT component, it loads the already-trained best_PhysiChemNet checkpoint rather than retraining the graph model independently within each fold.
+
+So there is a mismatch between:
+
+Paper
+
+5-fold CV across N=1,618.
+
+Code
+
+fixed 162 test samples + KFold over the remaining ~1,456 samples.
+
+Those are not the same experiment.
+
+This needs to be reconciled before publication.
+
+4. Even worse: molecular leakage is likely
+
+You have:
+
+1,618 trials / 169 distinct micropollutants
+
+which means each molecule appears repeatedly under different conditions. The manuscript itself acknowledges this.
+
+But the holdout split is performed at the trial level, not the molecule level.
+
+The code literally does:
+
+train_test_split(X_phys, y, smiles, ...)
+
+rather than grouping by SMILES.
+
+Therefore something like:
+
+Ibuprofen / NF270 / pH 7
+Ibuprofen / NF90 / pH 6
+Ibuprofen / BW30 / pH 8
+
+can be distributed across training and test.
+
+The graph representation of ibuprofen is essentially identical across those trials.
+
+Likewise, the 256-bit Morgan fingerprint is identical.
+
+So the model can learn the molecule in training and then be tested on another experimental condition of the same molecule.
+
+This isn't necessarily wrong.
+
+If your scientific question is:
+
+"Can I interpolate membrane rejection for a molecule already represented in the benchmark under a different operating condition?"
+
+then it is legitimate.
+
+But it is not evidence of zero-shot prediction of unseen contaminants.
+
+Your paper actually admits this limitation:
+
+future investigations will explore solute-disjoint partitions.
+
+That is good honesty.
+
+However, later sections make stronger claims such as screening "newly detected micropollutants."
+
+Those claims are not justified by the current evaluation.
+
+Required fix
+
+Add at least:
+
+random trial split
+molecule-disjoint split
+ideally Bemis–Murcko scaffold-disjoint split
+
+Then report all three.
+
+This could actually make the paper much stronger.
+
+5. The "physics-informed" formulation has a major scientific weakness
+
+This is probably the second-biggest problem after test leakage.
+
+You call the five quantities:
+
+"five governing dimensionless transport equations"
+
+but they are not all dimensionless, and they are not all governing physical equations.
+
+λ
+$$ \lambda = r_s/r_p $$
+
+Good. Dimensionless.
+
+Φ
+
+The Ferry–Renkin-type factor is reasonable as a hydrodynamic relationship. The literature does use related hindrance relationships, although the distinction between partition, diffusion and rejection needs to be made carefully.
+
+Lp
+$$ L_p = J_w/\Delta P $$
+
+This has units:
+
+$$ L\,m^{-2}h^{-1}bar^{-1} $$
+
+and your own Table 1 reports those units.
+
+So it is not dimensionless.
+
+Ψ is more problematic
+
+You define:
+
+$$ \Psi = \frac{z\zeta}{pH} $$
+
+and describe this as an electrostatic interaction potential.
+
+That is not a standard Donnan electrochemical potential formulation.
+
+Real membrane electrostatic transport models use quantities such as membrane potential, charge density, ionic concentrations and electrochemical potentials; extended Nernst–Planck/DSPM-DE formulations explicitly incorporate diffusion, electromigration, convection, steric effects and Donnan/dielectric partitioning.
+
+The biggest conceptual problem is:
+
+pH is a logarithmic quantity, not hydronium activity.
+
+So saying that dividing zeta potential by pH "normalizes against hydronium ion activity" is scientifically questionable.
+
+This should not be presented as a governing Donnan equation.
+
+H
+$$ H=\log D\cos(\theta) $$
+
+This is an engineered feature.
+
+It may be useful.
+
+But it is not a recognized governing transport equation.
+
+So I would rename the whole section:
+
+Physics-derived / mechanistically motivated descriptors
+
+rather than:
+
+Five governing dimensionless transport equations
+
+That change alone would make the paper scientifically more defensible.
+
+6. The dielectric mechanism is claimed but not actually represented
+
+The introduction says rejection is governed by four coupled mechanisms:
+
+steric
+Donnan
+dielectric Born barrier
+hydrophobic partitioning.
+
+But when the actual five physics descriptors are introduced, there is:
+
+λ
+Φ
+Lp
+Ψ
+H
+
+There is no Born-energy/dielectric-exclusion descriptor.
+
+This is a conceptual mismatch.
+
+The paper essentially says:
+
+"dielectric exclusion is one of the physical mechanisms motivating our model"
+
+but then does not actually encode a dielectric Born term.
+
+Fix
+
+Either:
+
+A. Remove dielectric exclusion from the claimed implemented physics, or
+
+B. Add a genuine dielectric-energy descriptor, e.g. a physically justified Born/self-energy term based on dielectric constants and ionic radius/charge.
+
+Option B would substantially strengthen the paper.
+
+7. The physical boundary constraint is too strong and insufficiently justified
+
+You use:
+
+$$ L_{steric}=\max(0,R_{theory}-\hat y) $$
+
+and claim this enforces the Ferry–Renkin rejection as a physical lower bound.
+
+This is questionable.
+
+A Ferry–Renkin partition/hindrance factor is not automatically equivalent to an experimentally observable rejection percentage under arbitrary:
+
+diffusion
+convection
+charge
+adsorption
+concentration polarization
+membrane morphology
+operating conditions
+
+Your own paper demonstrates situations where actual rejection differs substantially from the simple steric prediction.
+
+So the relationship should be described as a prior / regularizer, not an inviolable physical lower bound.
+
+8. The code does not exactly implement what the paper says
+
+I found several reproducibility discrepancies.
+
+8.1 Paper says GATv2, code's champion defaults to GINE
+
+The manuscript describes:
+
+"GATv2 Message-Passing Backbone"
+
+and reports the production architecture as a 3-layer GATv2 model.
+
+But the repository's PhysiChemNet defaults to:
+
+gnn_type = 'gine'
+
+and the source explicitly labels GINE as the "Global Champion."
+
+The default architecture is also two graph layers, not three.
+
+The evolutionary search does include GATv2/GINE as candidate architectures, but the manuscript needs to clearly identify which exact checkpoint generated the reported 0.9130 GTX result.
+
+Right now there is ambiguity.
+
+9. The physics loss in the code does not match the paper
+
+This is a particularly important reproducibility problem.
+
+The paper says the steric loss penalizes:
+
+$$ R_{theory}(\lambda)-\hat y $$
+
+which would imply a Ferry–Renkin-derived boundary.
+
+But the actual code's PhysicsConstrainedLoss uses:
+
+steric_penalty = relu(85.0 - pred[steric_mask])²
+
+for λ >= 1.
+
+That is 85%, not 100%.
+
+The manuscript repeatedly claims:
+
+"strictly conforms ... asymptotic convergence to 100% rejection"
+
+and:
+
+"enforcing ... 100% rejection."
+
+Yet the code's actual penalty is a soft preference toward 85%, followed by clipping at [0,100].
+
+This needs to be reconciled.
+
+10. The "Mixture-of-Experts" is somewhat overstated
+
+The gate is:
+
+$$ g(\lambda)=\frac{0.10}{1+\exp(6(\lambda-0.95))} $$
+
+and then:
+
+$$ \hat y=g\hat y_{GT}+(1-g)\hat y_{XGB}. $$
+
+This is a fixed deterministic blending rule, not a learned MoE gating network.
+
+Calling it a "physics-gated ensemble" or "physics-informed blending mechanism" would arguably be more precise.
+
+It isn't fatal, but reviewers in ML may challenge the terminology.
+
+11. The uncertainty claims are not sufficiently demonstrated
+
+This section is currently too strong.
+
+The paper says:
+
+"well-calibrated epistemic confidence envelopes"
+
+and claims the ±2σ envelope encloses the ground truth across the full rejection spectrum.
+
+But showing one plot where most points lie inside an envelope is not sufficient evidence of calibration.
+
+You need metrics such as:
+
+68% empirical coverage
+90% coverage
+95% coverage
+interval width
+calibration error
+error–uncertainty correlation
+ideally NLL/CRPS if treating the output probabilistically
+
+Coverage and interval width are standard ways of evaluating regression uncertainty.
+
+Also, MC dropout primarily gives uncertainty associated with the neural network approximation. Your GTX contains an XGB component too.
+
+The paper's uncertainty propagation:
+
+$$ \sigma = \sqrt{ g^2\sigma^2_{GT}+ (1-g)^2\sigma^2_{XGB} } $$
+
+is not adequately justified because the paper does not clearly establish how \(\sigma_{XGB}\) is estimated or account for covariance between the streams.
+
+That is a significant gap.
+
+12. "Statistically outperforming" is not supported
+
+The abstract/research highlights say the model is:
+
+"statistically outperforming MolGBN-OPR."
+
+But there is no statistical significance test.
+
+You report:
+
+Model	R²	RMSE	MAE
+MolGBN-OPR	0.9014	9.11	6.17
+PhysiChem-XGB	0.9127	8.57	5.44
+GTX	0.9130	8.56	5.52
+
+The difference between GTX and XGB is:
+
+$$ \Delta R^2=0.0003 $$
+
+and GTX actually has worse MAE than XGB.
+
+Therefore the claim that the MoE itself establishes a statistically meaningful improvement is especially difficult to defend.
+
+You need:
+
+paired bootstrap confidence intervals
+paired permutation test
+repeated CV comparison
+or another appropriate statistical comparison
+
+Otherwise say:
+
+"achieves numerically higher R²"
+
+not:
+
+"statistically outperforms."
+
+13. The XGB result is arguably the real result
+
+This is scientifically interesting.
+
+Your own Table 2 shows:
+
+PhysiChem-XGB: R² = 0.9127
+
+while:
+
+GTX: R² = 0.9130
+
+So nearly all of the performance comes from the XGB stream.
+
+The Graph Transformer has:
+
+R² = 0.7607.
+
+And GTX adds only 0.0003 R² over XGB.
+
+That means the paper's strongest scientific contribution may actually be:
+
+Physics-derived descriptors + ECFP4 + monotonic XGBoost outperform the previous multimodal neural architecture on this moderate-sized benchmark.
+
+That is already a valid result.
+
+The graph transformer may be valuable for interpretability, rather than predictive performance.
+
+I would lean into that rather than trying to sell the MoE as the primary accuracy innovation.
+
+14. The mechanistic interpretation is overclaimed
+
+This sentence is too strong:
+
+"These sub-molecular attributions demonstrate that PhysiChem-GT isolates genuine functional-group mechanics rather than relying on spurious statistical correlations."
+
+Integrated Gradients tells you:
+
+which input features influence the model's output.
+
+It does not, by itself, establish that those features are causally responsible for the physical mechanism.
+
+There is substantial literature discussing limitations of attribution methods, including cases where SHAP/IG explanations can fail to reliably infer model behavior or causal relevance.
+
+So replace:
+
+"genuine functional-group mechanics"
+
+with something like:
+
+"model-attributed functional-group patterns that are consistent with established transport hypotheses."
+
+That is much safer scientifically.
+
+15. The engineering claims are much too strong for the evidence
+
+This paragraph is overreaching:
+
+"validated, open-source computational twin for rational membrane selection and water reuse safety assurance."
+
+And later:
+
+"regulatory compliance assessments can be conditioned on the lower bound of the 95% confidence interval."
+
+The dataset is only:
+
+1,618 trials
+169 molecules
+12 membranes
+
+and apparently evaluates interpolation among existing molecules/conditions.
+
+That is nowhere near enough to claim regulatory safety assurance.
+
+The correct framing is:
+
+research-stage screening tool
+
+not:
+
+water reuse certification / regulatory safety tool.
+
+This distinction matters greatly to reviewers.
+
+16. The NAS experiment is particularly vulnerable to overfitting
+
+The paper describes evolutionary search:
+
+37 configurations across 12 generations.
+
+But the repository's search is explicitly optimized according to test-set performance.
+
+This is effectively:
+
+hyperparameter tuning on the test set.
+
+With many candidate configurations, the best observed test score will be upward biased.
+
+This may explain part of the impressive 0.9130 result.
+
+Correct approach
+
+Use:
+
+nested CV
+
+or at minimum:
+
+fixed test
+inner validation
+architecture search exclusively on development
+final test once
+
+This is probably the single most important statistical correction.
+
+17. The paper needs a real "limitations" section
+
+Currently the limitations are scattered throughout the paper.
+
+You should explicitly state:
+
+Data limitations
+only 169 molecules
+only 12 membranes
+heterogeneous experimental provenance
+trial-level rather than molecule-level split
+Physics limitations
+spherical solute approximation
+simplified Donnan descriptor
+no explicit dielectric Born energy
+no ionic-strength/electrolyte competition
+simplified adsorption descriptor
+no dynamic fouling model
+ML limitations
+moderate dataset size
+possible molecular leakage under random split
+fixed gate
+attribution is not causal
+MC-dropout calibration not formally established
+Applicability limitations
+interpolation rather than true novel-molecule prediction
+no independent external dataset
+no prospective membrane experiment
+
+That would make the manuscript much more credible.
