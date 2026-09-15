@@ -311,9 +311,9 @@ def generate_table2():
         {"#": 2, "Model": "GrowNN",                         "Modality": "19-D Tabular Only",               "Test R2": 0.8494, "RMSE": 11.26, "MAE": 7.21, "Status": "Literature"},
         {"#": 3, "Model": "Table + ResNet-18",              "Modality": "Tabular + 2D Mol. Image",         "Test R2": 0.8571, "RMSE": 10.97, "MAE": 6.85, "Status": "Literature"},
         {"#": 4, "Model": "MolGBN-OPR (Xiao et al. 2026)", "Modality": "DynamicNet + GCN",                "Test R2": 0.9014, "RMSE":  9.11, "MAE": 6.17, "Status": "Base Paper"},
-        {"#": 5, "Model": "PhysiChem-GT (Ours)",            "Modality": "24-D + GATv2 + CrossAttn",        "Test R2": 0.7607, "RMSE": 14.19, "MAE": 8.74, "Status": "Ours"},
-        {"#": 6, "Model": "PhysiChem-XGB (Ours)",           "Modality": "24-D Physics + ECFP4",            "Test R2": 0.9127, "RMSE":  8.57, "MAE": 5.44, "Status": "Ours"},
-        {"#": 7, "Model": "PhysiChem-GTX (Ours Champion)",  "Modality": "24-D + GATv2 + XGB MoE Fusion",  "Test R2": 0.9130, "RMSE":  8.56, "MAE": 5.52, "Status": "Champion"},
+        {"#": 5, "Model": "PhysiChem-GT (Proposed Model)",   "Modality": "24-D + GATv2 + CrossAttn",        "Test R2": 0.7607, "RMSE": 14.19, "MAE": 8.74, "Status": "Proposed Model"},
+        {"#": 6, "Model": "PhysiChem-XGB (Proposed Model)",  "Modality": "24-D Physics + ECFP4",            "Test R2": 0.9127, "RMSE":  8.57, "MAE": 5.44, "Status": "Proposed Model"},
+        {"#": 7, "Model": "PhysiChem-GTX (Proposed Model)",  "Modality": "24-D + GATv2 + XGB MoE Fusion",  "Test R2": 0.9130, "RMSE":  8.56, "MAE": 5.52, "Status": "Proposed Model"},
     ]
     df = pd.DataFrame(rows)
     df['Delta R2'] = (df['Test R2'] - 0.9014).round(4)
@@ -328,7 +328,7 @@ def generate_table2():
         f.write("\\begin{tabular}{clllccc}\n\\toprule\n")
         f.write("\\# & Model & Modality & Status & $R^2\\uparrow$ & RMSE(\\%)$\\downarrow$ & MAE(\\%)$\\downarrow$ \\\\\n\\midrule\n")
         for _, r in df.iterrows():
-            champ = r['Status'] == 'Champion'
+            champ = r['#'] == 7
             r2s  = f"\\textbf{{{r['Test R2']:.4f}}}" if champ else f"{r['Test R2']:.4f}"
             rms  = f"\\textbf{{{r['RMSE']:.2f}}}" if champ else f"{r['RMSE']:.2f}"
             mas  = f"\\textbf{{{r['MAE']:.2f}}}" if champ else f"{r['MAE']:.2f}"

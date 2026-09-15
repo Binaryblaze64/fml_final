@@ -23,6 +23,13 @@ __pycache__/
 venv/
 .env/
 
+# Compressed Archives & Overleaf Bundles (download separately or via Releases)
+*.zip
+*.tar.gz
+
+# Scratch directory
+scratch/
+
 # OS
 .DS_Store
 Thumbs.db

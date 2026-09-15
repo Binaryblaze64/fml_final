@@ -9,18 +9,20 @@ Runs live inference using both PhysiChem-GT (Graph Transformer) and PhysiChem-XG
 import os
 import sys
 if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    getattr(sys.stdout, 'reconfigure')(encoding='utf-8', errors='replace')
 if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    getattr(sys.stderr, 'reconfigure')(encoding='utf-8', errors='replace')
 import json
 import joblib
 import numpy as np
 import pandas as pd
 import torch
+import rdkit
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit import RDLogger
-RDLogger.DisableLog('rdApp.*')
+from rdkit.Chem import AllChem  # type: ignore
+from rdkit import RDLogger  # type: ignore
+if hasattr(rdkit, 'RDLogger'):
+    getattr(rdkit.RDLogger, 'DisableLog', lambda *a: None)('rdApp.*')  # type: ignore
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from torch.utils.data import DataLoader
@@ -38,7 +40,7 @@ def get_fingerprint(smiles: str, n_bits: int = 256) -> np.ndarray:
     mol = Chem.MolFromSmiles(str(smiles))
     if mol is None:
         return np.zeros(n_bits, dtype=np.float32)
-    fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=n_bits)
+    fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=n_bits)  # type: ignore
     return np.array(fp, dtype=np.float32)
 
 
@@ -53,8 +55,8 @@ def main():
     df = pd.read_csv(data_file)
     X_phys, y, smiles = extract_features_and_labels(df, use_physics=True)
 
-    r_solute = df['Molecular radius (nm)'].values
-    r_pore = np.maximum(df['Pore radius (nm)'].values, 1e-6)
+    r_solute = np.asarray(df['Molecular radius (nm)'].values, dtype=float)
+    r_pore = np.maximum(np.asarray(df['Pore radius (nm)'].values, dtype=float), 1e-6)
     steric_all = r_solute / r_pore
     fps = np.array([get_fingerprint(s, 256) for s in smiles])
     X_xgb_all = np.hstack([X_phys, fps])
@@ -97,7 +99,8 @@ def main():
 
     # 5. Dual-Stream Adaptive Physics-Gated MoE Fusion
     # g(lambda) dynamically routes based on steric ratio
-    g_moe = 0.10 / (1.0 + np.exp(6.0 * (st_test - 0.95)))
+    st_test_arr = np.asarray(st_test, dtype=float)
+    g_moe = 0.10 / (1.0 + np.exp(6.0 * (st_test_arr - 0.95)))
     gtx_preds = g_moe * gt_preds + (1.0 - g_moe) * xgb_preds
     gtx_preds = np.clip(gtx_preds, 0.0, 100.0)
 

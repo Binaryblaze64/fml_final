@@ -109,34 +109,51 @@ fml_research-main/
 │
 ├── main.py                             # 🌟 Master Inference CLI & Interactive Engine
 ├── README.md                           # 📖 Quickstart & Performance Overview
-├── MODEL_ARCHITECTURE_GUIDE.md         # 📘 Complete In-Depth Study & Architecture Guide
+├── requirements.txt                    # Python Dependencies
+├── .gitignore                          # Git Ignore Rules
 │
 ├── models/
 │   └── new_architecture.py             # 🏆 PhysiChem-GT Core Model Architecture
 │
-├── src/
-│   ├── evolution_search.py             # 🧬 Genetic Evolutionary NAS Algorithm
-│   ├── evaluate_best_physichemnet.py   # 📊 5-Fold Benchmark & Validation Suite
-│   ├── molecule_feature_importance.py  # 🔬 Explainable AI (SHAP & Integrated Gradients)
-│   ├── single_molecule_analysis_example.py # 🧪 Single Molecule Testing Script
-│   └── utils/
-│       ├── physics_features.py         # 24-D Physics Feature Engineering Engine
-│       └── smiles2graph.py             # 3D Molecular Graph Featurizer
-│
-├── checkpoint/
-│   ├── best_PhysiChemNet.pth           # 🏆 Trained Champion Model Weights (R² = 0.9121)
-│   └── best_PhysiChemNet_fold0-4.pth   # 5-Fold CV Checkpoints
-│
-├── results/
-│   ├── figure5_shap_feature_importance.png   # 📊 24-D Physics Feature Importance
-│   ├── figure7_atom_importance_ibuprofen.png # 🧪 Ibuprofen Atom Attribution Map
-│   ├── final_physichemnet_benchmark.json     # 📋 Benchmark Summary JSON
-│   └── evolution_search/search_progress.json # 🧬 31-Model NAS Search History
+├── dataset/
+│   └── dataset.py                      # 📦 PyTorch Geometric TableGraphDataset Loader
 │
 ├── data/
-│   └── processed/MemTrOC-Dataset.csv   # 1,618 TrOC Rejection Records
+│   └── processed/
+│       └── MemTrOC-Dataset.csv         # 1,618 TrOC Rejection Experimental Records
 │
-└── requirements.txt                    # Python Dependencies
+├── checkpoint/
+│   ├── best_PhysiChemNet.pth           # 🏆 Champion Graph Transformer Weights (R² = 0.9121)
+│   ├── best_PhysiChemNet_fold0-4.pth   # 5-Fold Cross-Validation Weights
+│   ├── best_xgboost_model.pkl          # 🌲 Champion PhysiChem-XGB Model
+│   ├── best_xgboost_ensemble.pkl       # 🌲 5-Fold XGBoost Ensemble Models
+│   ├── best_physichem_gtx.pkl          # ⚡ PhysiChem-GTX Physics-Gated MoE Bundle
+│   └── scaler.pkl                      # 📐 Fitted 24-D MinMaxScaler
+│
+├── src/
+│   ├── train_physichem_gtx.py          # ⚡ Master PhysiChem-GTX Dual-Stream Pipeline
+│   ├── train_xgboost_model.py          # 🌲 PhysiChem-XGB Monotonic Baseline Pipeline
+│   ├── evaluate_physichem_gtx.py       # 📊 PhysiChem-GTX Evaluation Benchmark
+│   ├── evaluate_best_physichemnet.py   # 📊 5-Fold Benchmark & Validation Suite
+│   ├── evolution_search.py             # 🧬 Genetic Evolutionary NAS Algorithm
+│   ├── molecule_feature_importance.py  # 🔬 Explainable AI (SHAP & Integrated Gradients)
+│   ├── single_molecule_analysis_example.py # 🧪 Single Molecule Testing Script
+│   ├── generate_paper_figures.py       # 📈 Master Manuscript Figures & Tables Generator
+│   ├── generate_si_figures.py          # 📈 Supplementary Figures S1–S5 Generator
+│   ├── generate_troc_longtable.py      # 📋 Table S3 TeX Longtable Generator (169 Compounds)
+│   ├── extract_si_tables.py            # 📑 SI Table Extraction Utility
+│   └── utils/
+│       ├── physics_features.py         # 24-D Physics Feature Engineering Engine
+│       └── smiles2graph.py             # 3D Molecular Graph Featurizer (Stereo Bonds + Nodes)
+│
+└── results/
+    ├── final_gtx_benchmark.json        # 🏆 PhysiChem-GTX Final Benchmark Metrics
+    ├── final_physichemnet_benchmark.json# 📋 PhysiChem-GT Final Benchmark Metrics
+    ├── final_xgboost_benchmark.json    # 📋 PhysiChem-XGB Final Benchmark Metrics
+    ├── test_evaluation_data.json       # 🧪 Holdout Test Ground Truth & Predictions
+    ├── evolution_search/
+    │   └── search_progress.json        # 🧬 31-Model NAS Search History
+    └── paper_figures/                  # 📊 Publication Figures (1-8, S1-S5) & Tables
 ```
 
 ---
