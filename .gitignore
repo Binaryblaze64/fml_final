@@ -1,17 +1,14 @@
 # Base paper checkpoints
-/checkpoint/best_GrowTableFingerPrint.pth
-/checkpoint/best_GrowTableGraphImage_0623.pth
-/checkpoint/best_GrowTableGraphNN_0606.pth
-/checkpoint/best_GrowTableGraphNN_0912.pth
-/checkpoint/best_GrowTableImage_0304.pth
+/checkpoint/best_GrowTable*
 
-# Our model checkpoints (large binary files — download separately)
-/checkpoint/*.pth
-/checkpoint/*.pkl
+# Large cross-validation folds and ensemble models (download separately / optional)
+/checkpoint/best_PhysiChemNet_fold*.pth
+/checkpoint/best_xgboost_ensemble.pkl
 
-# Processed PyG data cache
-/data/processed/
+# Processed PyG binary data cache
+/data/processed/*.pt
 /data/raw/
+!/data/processed/MemTrOC-Dataset.csv
 
 # Python artifacts
 __pycache__/
@@ -19,9 +16,14 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 
+# IDE & Editor settings
+.vscode/
+.idea/
+
 # Virtual env
 venv/
 .env/
+env/
 
 # Compressed Archives & Overleaf Bundles (download separately or via Releases)
 *.zip
