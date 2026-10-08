@@ -519,26 +519,26 @@ This cross-modal conditioning layer produces an operations-aware molecular repre
 Component & Hyperparameter & \begin{tabular}{@{}c@{}}Configured Value\\/ Range\end{tabular} \\
 \midrule
 \multirow{4}{3.6cm}{\raggedrightInput Featurization} 
- & Atomic Feature Vector Dimension ($d_v$) & 32 \\
- & Bond Feature Vector Dimension ($d_e$)   & 16 \\
- & Virtual Node Embedding Dimension ($d_{vn}$) & 64 \\
- & Tabular Membrane/Operating Projection ($d_{tab}$) & 64 \\
+ & Atomic Feature Vector Dimension ($d_v$) & 9 \\
+ & Bond Feature Vector Dimension ($d_e$)   & 3 \\
+ & Initial Node Projection Dimension       & 128 \\
+ & Tabular Physics Descriptor Dimension    & 24 \\
 \midrule
 \multirow{4}{3.6cm}{\raggedrightMessage Passing \& Attention} 
  & Number of Graph Attention Layers ($L$)    & 2 \\
  & Hidden Embedding Dimension ($d_{\mathrm{model}}$)  & 128 \\
  & Number of Attention Heads ($H$)           & 4 \\
- & Feed-Forward Network Dimension ($d_{ff}$) & 256 \\
+ & Readout Projection ($3d \to d$)           & $384 \to 128$ \\
 \midrule
 \multirow{3}{3.6cm}{\raggedrightRegularization \& Optimization}
- & Dropout Rate (Attention \& Fully Connected) & 0.15 \\
- & Weight Decay ($L_2$ Regularization)       & $1.0 \times 10^{-4}$ \\
- & Learning Rate (AdamW with Cosine Annealing) & $5.0 \times 10^{-4}$ \\
+ & Dropout Rate (Attention \& Fully Connected) & 0.20 \\
+ & Weight Decay ($L_2$ Regularization)       & $1.0 \times 10^{-3}$ \\
+ & Learning Rate (AdamW with Cosine Annealing) & $1.0 \times 10^{-3}$ \\
 \midrule
 \multirow{3}{3.6cm}{\raggedrightLoss Function Multipliers}
  & Huber Transition Threshold ($\delta$)       & $5.0\%$ \\
- & Steric Barrier Penalty ($\lambda_{\mathrm{steric}}$) & 2.0 \\
- & Physical Bounds Penalty ($\lambda_{\mathrm{bounds}}$) & 1.0 \\
+ & Steric Barrier Penalty ($\lambda_{\mathrm{steric}}$) & 1.0 \\
+ & Physical Bounds Penalty ($\lambda_{\mathrm{bounds}}$) & 0.1 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -698,7 +698,7 @@ In Equation~14 of the main manuscript, the ensemble epistemic uncertainty combin
 
 \noindent\textit{Statistical Derivation:} Treat $\hat{y}_{\mathrm{GT}}$ and $\hat{y}_{\mathrm{XGB}}$ as random variables representing the epistemic posterior probability distributions of the neural and tree streams, with means $\mu_{\mathrm{GT}}, \mu_{\mathrm{XGB}}$ and variances $\sigma_{\mathrm{GT}}^2, \sigma_{\mathrm{XGB}}^2$. 
 \begin{enumerate}[leftmargin=1.0cm]
-    \item Neural Stream Variance ($\sigma_{\mathrm{GT}}^2$): Evaluated via Monte Carlo Dropout across $T = 50$ stochastic forward passes with dropout rate $p = 0.15$:
+    \item \textbf{Neural Stream Variance ($\sigma_{\mathrm{GT}}^2$):} Evaluated via Monte Carlo Dropout across $T = 30$ stochastic forward passes with dropout rate $p = 0.20$:
     \begin{equation}
     \sigma_{\mathrm{GT}}^2 = \frac{1}{T} \sum_{t=1}^T \left( \hat{y}_{\mathrm{GT}}^{(t)} - \frac{1}{T}\sum_{k=1}^T \hat{y}_{\mathrm{GT}}^{(k)} \right)^2
     \label{eq:s_mc_dropout}
