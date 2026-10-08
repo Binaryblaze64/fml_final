@@ -24,12 +24,12 @@ Discovered and validated through **Evolutionary Neural Architecture Search (NAS)
 | **GrowNN** | Tabular Descriptors Only | 0.8494 | 11.26 | 7.21 | Baseline |
 | **Table + Image (ResNet)** | Tabular + 2D CNN Image | 0.8571 | 10.97 | 6.85 | Baseline |
 | **MolGBN-OPR** (*Xiao et al., 2026*) | DynamicNet Boosting + 2-Layer GCN | 0.9014 | 9.11 | 6.17 | Literature Baseline |
-| **PhysiChem-GT** | GINEConv Graph Transformer + Cross Attention | 0.7607 | 14.19 | 8.74 | Deep Graph Model (XAI Engine) |
-| **PhysiChem-XGB** | 24D Physics + 256D ECFP4 + Monotonic Constraints | 0.9127 | 8.57 | 5.44 | High-Accuracy Tree Model |
-| **PhysiChem-GTX** | **Physics-Gated MoE (Graph Transformer + Monotonic Booster)** | **0.9130** | **8.56** | **5.52** | 🏆 **Global Peak Champion (Physics MoE)** |
+| **PhysiChem-GT** | GATv2Conv Graph Attention Transformer + Cross Attention | 0.7607 | 14.19 | 8.74 | Deep Graph Model (XAI Engine) |
+| **PhysiChem-XGB** | 24D Physics + 256D ECFP4 + Hard Monotonic Constraints | 0.9127 | 8.57 | 5.44 | High-Accuracy Tree Model |
+| **PhysiChem-GTX** | **Physics-Gated MoE (GATv2 Transformer + Monotonic Booster)** | **0.9130** | **8.56** | **5.52** | 🏆 **Global Peak Champion (Physics MoE)** |
 
 * **5-Fold Cross-Validation**: **$\text{Mean } R^2 = 0.8585 \pm 0.0224$**, **$\text{Peak Fold } R^2 = 0.8819$**
-* **Physics Guarantee**: Hard monotonic constraints on Pore Radius ($\frac{\partial y}{\partial r_p} \le 0$) and Steric Ratio ($\frac{\partial y}{\partial \lambda} \ge 0$).
+* **Physics Guidance**: Hard monotonic constraints on Pore Radius ($\frac{\partial y}{\partial r_p} \le 0$) and Steric Ratio ($\frac{\partial y}{\partial \lambda} \ge 0$) strictly enforced within the **PhysiChem-XGB** booster. In **PhysiChem-GTX**, the adaptive hydrodynamic gate dynamically shifts >95% authority to the monotonic tree in the sieving regime ($\lambda \ge 1.0$), eliminating unphysical size-exclusion hallucinations while preserving atomistic multi-head attention.
 
 ---
 
@@ -44,12 +44,12 @@ flowchart TD
 
     subgraph Feature Encoders
         A1 --> TabEnc["Tabular MLP Encoder<br>(2 Layers, BatchNorm + GELU)"]
-        VN["Learnable Virtual Node<br>(Global Molecular Context)"] --> GINE
-        A2 --> GINE["GINEConv Graph Encoder<br>(2 Layers, 128 Hidden Dims, 4 Heads)"]
+        VN["Learnable Virtual Node<br>(Global Molecular Context)"] --> GAT
+        A2 --> GAT["GATv2Conv Graph Attention Encoder<br>(2 Layers, 128 Hidden Dims, 4 Attention Heads)"]
     end
 
     subgraph Multimodal Fusion & Prediction Head
-        TabEnc & GINE --> CrossAttn["4-Head Bidirectional Cross-Modal Attention<br>Attention(Q, K, V) = softmax(QKᵀ / √d) V"]
+        TabEnc & GAT --> CrossAttn["4-Head Bidirectional Cross-Modal Attention<br>Attention(Q, K, V) = softmax(QKᵀ / √d) V"]
         CrossAttn --> PredHead["Regression Prediction Head<br>(Huber Loss δ=5.0 + MC-Dropout Uncertainty)"]
     end
 

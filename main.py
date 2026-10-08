@@ -202,6 +202,7 @@ class ModelEngine:
             with torch.no_grad():
                 gt_mean, gt_std = self.gt_model.predict_with_uncertainty(x_tensor, graph_batch, n_samples=n_samples)
                 pred_gt = float(gt_mean.item())
+                std_gt = float(gt_std.item())
 
             # Stream 2: PhysiChem-XGB Forward Pass
             fp = self._get_fingerprint(smiles, n_bits=256)
@@ -215,7 +216,11 @@ class ModelEngine:
 
             val = g_moe * pred_gt + (1.0 - g_moe) * pred_xgb
             val_clamped = max(0.0, min(100.0, val))
-            std = float(self.metrics.get('test_mae', 5.50))
+
+            # Mixture-of-Experts predictive uncertainty combining epistemic dispersion and residual variance
+            xgb_rmse = float(self.metrics.get('test_rmse', 8.56))
+            var_mixture = (g_moe * (std_gt ** 2)) + ((1.0 - g_moe) * (xgb_rmse ** 2)) + (g_moe * (1.0 - g_moe) * ((pred_gt - pred_xgb) ** 2))
+            std = float(np.sqrt(max(0.1, var_mixture)))
             return val_clamped, std
 
         elif self.model_type == 'xgboost':
@@ -223,7 +228,7 @@ class ModelEngine:
             x_input = np.concatenate([tabular_24d, fp]).reshape(1, -1)
             pred = float(self.model.predict(x_input)[0])
             val_clamped = max(0.0, min(100.0, pred))
-            std = float(self.metrics.get('test_mae', 5.44))
+            std = float(self.metrics.get('test_rmse', 8.57))
             return val_clamped, std
 
         else: # gnn

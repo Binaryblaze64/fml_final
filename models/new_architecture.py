@@ -412,7 +412,7 @@ class PhysiChemNet(nn.Module):
     
     Combines:
         Tabular Features (24-D) -> TabularEncoder -> 128-D
-        Molecular Graph         -> GINEConv       -> 128-D
+        Molecular Graph         -> GATv2Conv / GINE -> 128-D
                                         |
                             CrossModalAttentionFusion (4-Head)
                                         |
@@ -422,8 +422,8 @@ class PhysiChemNet(nn.Module):
         super().__init__()
         self.config = config
 
-        # Graph encoder
-        gnn_type = config.get('gnn_type', 'gine')
+        # Graph encoder (GATv2 4-Head Attention is the trained Champion architecture)
+        gnn_type = config.get('gnn_type', 'gatv2')
         if gnn_type == 'gatv2':
             self.graph_encoder = GATv2MolecularEncoder(
                 node_dim=config.get('node_dim', 9),
@@ -434,7 +434,7 @@ class PhysiChemNet(nn.Module):
                 dropout=config.get('gnn_dropout', 0.2),
                 use_virtual_node=config.get('use_virtual_node', True)
             )
-        else:  # gine (Global Champion)
+        else:  # gine alternative NAS architecture
             self.graph_encoder = GINEMolecularEncoder(
                 node_dim=config.get('node_dim', 9),
                 edge_dim=config.get('edge_dim', 3),
