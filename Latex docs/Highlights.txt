@@ -1,21 +1,40 @@
-RESEARCH HIGHLIGHTS: PhysiChem-GTX
-==================================
-
---- FORMAT 1: SHORT VERSION (Strict 85-125 Character Limit per Bullet) ---
-(Recommended for Elsevier, Desalination, Water Research, J. Membr. Sci.)
-
-• Dual-stream GATv2 and monotonic tree model predicts NF/RO membrane rejection. [78 chars]
-• Achieved top benchmark accuracy with R² = 0.9130 and holdout RMSE = 8.56%. [75 chars]
-• Integrated five governing hydrodynamic and electrostatic transport laws. [74 chars]
-• Dual-stream uncertainty quantification achieves calibrated 94.4% 2σ coverage. [79 chars]
-• Multiscale Integrated Gradients reveal sub-molecular functional group attribution. [84 chars]
+RESEARCH HIGHLIGHTS
+===================
+Manuscript Title: PhysiChem-GTX: A Physics-Informed Dual-Stream Framework for Predicting Micropollutant Rejection in NF/RO Membranes
+Target Journals: Desalination / Water Research / Journal of Membrane Science / Chemical Engineering Journal
 
 
---- FORMAT 2: EXTENDED VERSION (Detailed / Unrestricted Portals) ---
-(Recommended if the portal has no character count limit or allows 1-2 sentences per point)
+================================================================================
+TIER 1: STRICT 85-CHARACTER LIMIT (MANDATORY FOR ELSEVIER 85-CHAR PORTALS)
+================================================================================
+* Instructions: Use this tier if the submission portal displays "Maximum 85 characters per bullet including spaces".
 
-• Dual-Stream Architecture: Synergizes a stereochemically aware Graph Transformer (GATv2) with a monotonic tree booster via a physical hydrodynamic gate to combine atomistic attribution with macroscopic physical bounds.
-• Top Benchmark Accuracy: Establishes state-of-the-art holdout performance on the 1,618-trial MemTrOC corpus (R² = 0.9130, RMSE = 8.56%, MAE = 5.52%), surpassing prior literature baselines.
-• Physics-Informed Priors: Directly embeds five governing separation equations (steric ratio, Ferry partition, permeability, Donnan index, and hydrophobic affinity) into feature representations and loss constraints.
-• Calibrated Epistemic Uncertainty: Delivers reliable prediction confidence intervals via dual-stream Mixture-of-Experts variance propagation with 94.4% 2σ coverage and 1.6% Expected Calibration Error.
-• Multi-Scale Mechanistic Interpretability: Unifies macro-level tree SHAP importance with sub-molecular Integrated Gradients attributions across neutral, cationic, and anionic micropollutants.
+• PhysiChem-GTX unifies GATv2 and monotonic trees via physical hydrodynamic gating. [81 chars]
+• Directly embeds five steric, hydrodynamic, and Donnan separation transport laws. [80 chars]
+• Establishes SOTA benchmark accuracy with R² = 0.9130 and holdout RMSE = 8.56%. [78 chars]
+• Dual-stream uncertainty quantification achieves calibrated 94.4% 2σ coverage. [77 chars]
+• Sub-molecular Integrated Gradients decode atom-resolved rejection mechanisms. [77 chars]
+
+
+================================================================================
+TIER 2: STANDARD 125-CHARACTER LIMIT (RECOMMENDED FOR DESALINATION / WATER RESEARCH)
+================================================================================
+* Instructions: Use this tier if the portal allows up to 125 characters per bullet.
+
+• PhysiChem-GTX bridges a GATv2 molecular graph transformer with monotonic tree boosting via hydrodynamic physical gating. [120 chars]
+• Directly incorporates five governing steric, hydrodynamic, and electrostatic Donnan separation laws into model priors. [118 chars]
+• Establishes SOTA benchmark rejection performance with R² = 0.9130 and RMSE = 8.56% across 1,618 micropollutant trials. [118 chars]
+• Dual-stream mixture uncertainty delivers calibrated prediction confidence intervals with 94.4% empirical 2σ coverage. [117 chars]
+• Sub-molecular Integrated Gradients attribute atomistic charge and steric rejection mechanisms across pharmaceuticals. [117 chars]
+
+
+================================================================================
+TIER 3: EXTENDED EXECUTIVE HIGHLIGHTS (FOR PORTALS WITH NO CHARACTER RESTRICTION)
+================================================================================
+* Instructions: Use this tier if the journal portal has no character counter, or for editorial cover letters.
+
+• Physics-Gated Dual-Stream Architecture: Formulated PhysiChem-GTX, coupling an edge-augmented GATv2 molecular Graph Transformer with monotonic gradient-boosted trees via a dimensionless hydrodynamic gate (λ = r_s/r_p) to reconcile microscopic stereochemical attribution with macroscopic thermodynamic validity.
+• State-of-the-Art Benchmark Performance: Achieved top holdout accuracy (R² = 0.9130, RMSE = 8.56%, MAE = 5.52%) across 1,618 filtration trials spanning 169 micropollutants, reducing prediction error by 6.1% relative to prior published benchmarks.
+• Coupled Separation Physics Integration: Embedded five governing membrane transport laws—steric confinement (λ), Ferry-Renkin partition (Φ), hydraulic permeability (L_p), Donnan index (Ψ), and interfacial affinity (H)—directly into tabular features and boundary loss constraints.
+• Calibrated Epistemic Uncertainty Quantification: Formulated dynamic Mixture-of-Experts variance propagation combining Monte Carlo dropout and stream divergence, delivering calibrated safety intervals with 94.4% empirical 2σ test coverage (ECE = 1.6%).
+• Multi-Scale Mechanistic Interpretability: Unified population-level tree SHAP attributions with sub-molecular Integrated Gradients maps, identifying distinct functional group transport mechanisms across neutral, cationic, and anionic pharmaceutical classes.
