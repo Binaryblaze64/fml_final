@@ -1,0 +1,26 @@
+Feature,Mean_Absolute_SHAP
+Steric Ratio (λ),6.6484246
+Pore radius (nm),4.604371
+Filtration duration (h),2.6431282
+Molecular Graph,2.2228572
+Pure water flux (L/(m²·h·bar)),1.9683486
+MW (Da),1.9140563
+Hydraulic Permeability (Lp),1.7533964
+Ferry-Renkin (Φ),1.6798446
+pH,1.6092019
+Molecular charge,1.4892023
+Pressure (bar),1.3652979
+TrOC concentration (mg/L),1.3462516
+Hydrophobic Affinity (H),1.343341
+Molecular radius (nm),1.1887484
+log D,1.0956043
+Charge product,0.8685071
+Max projection (nm),0.8402251
+Contact angle (°),0.7753696
+MWCO (Da),0.6849593
+pKa1,0.6224786
+Zeta potential (mV),0.5696015
+Donnan Index (Ψ),0.56749
+Min projection (nm),0.45999348
+log Kow,0.4384813
+Temperature (°C),0.22406615
