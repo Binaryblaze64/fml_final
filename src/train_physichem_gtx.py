@@ -3,7 +3,7 @@
 PhysiChem-GTX Training & 5-Fold Cross-Validation Suite
 ======================================================
 Trains and validates the unified PhysiChem-GTX dual-stream hybrid architecture:
-  - Stream 1: PhysiChem-GT (3D Bond GINEConv Graph Transformer + Virtual Node)
+  - Stream 1: PhysiChem-GT (3D Bond GATv2Conv Graph Transformer + Virtual Node)
   - Stream 2: PhysiChem-XGB (24-D Coupled Separation Physics + Monotonic Constraints + ECFP4)
   - Unified Fusion: Constrained dual-stream blending yielding SOTA performance (R² = 0.9130).
 """

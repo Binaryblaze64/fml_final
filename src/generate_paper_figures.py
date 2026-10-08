@@ -342,7 +342,7 @@ def generate_table3():
     print("\n[Table 3] Ablation Study ...")
     rows = [
         {"Variant": "PhysiChem-GT (Full)",         "Modification": "All components enabled",                  "R2": 0.9121, "RMSE": 8.60, "MAE": 5.89, "Delta": 0.0000},
-        {"Variant": "w/o 3D Bond Embeddings",      "Modification": "GINEConv -> standard GCN",                "R2": 0.8654, "RMSE": 10.72, "MAE": 6.78, "Delta": -0.0467},
+        {"Variant": "w/o 3D Bond Embeddings",      "Modification": "GATv2Conv -> standard GCN",                "R2": 0.8654, "RMSE": 10.72, "MAE": 6.78, "Delta": -0.0467},
         {"Variant": "w/o Cross-Modal Attention",   "Modification": "4-head attention -> concatenation",        "R2": 0.8710, "RMSE": 10.45, "MAE": 6.61, "Delta": -0.0411},
         {"Variant": "w/o Multi-Scale Readout",     "Modification": "Mean+Max+Sum -> single mean pooling",      "R2": 0.8805, "RMSE": 10.12, "MAE": 6.35, "Delta": -0.0316},
         {"Variant": "w/o 5 Physics Laws",          "Modification": "24-D -> 19-D raw features only",           "R2": 0.8837, "RMSE":  9.89, "MAE": 6.74, "Delta": -0.0284},
