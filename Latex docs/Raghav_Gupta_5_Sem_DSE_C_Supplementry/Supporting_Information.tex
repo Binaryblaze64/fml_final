@@ -489,24 +489,21 @@ The extreme localized charge state is preserved without dilution. The third mome
 \subsection{Cross-Modal Tabular-Graph Conditioning Attention}
 \label{sec:cross_modal_attention}
 
-Membrane operating parameters ($J_w, \Delta P, \mathrm{pH}, T, \zeta_m$) dictate the local thermodynamic environment under which solute functional groups approach the membrane interface. To condition the atomic graph representation on these operational conditions without unconstrained parameter explosion, PhysiChem-GT incorporates a multi-head cross-attention mechanism:
+After tri-moment pooling (Eq.~8) aggregates all node representations into the graph-level readout $h_{\mathrm{graph}} \in \mathbb{R}^{128}$, a bidirectional cross-attention module fuses this \emph{global} molecular representation with the tabular operating descriptor embedding. Membrane operating parameters ($J_w, \Delta P, \mathrm{pH}, T, \zeta_m$) dictate the local thermodynamic environment. The cross-attention operates on a single sequence-length-1 token per stream:
 \begin{enumerate}[leftmargin=1.0cm]
-    \item The 19 raw tabular features are linearly projected into a dense operational query tensor:
+    \item The 24-D physical descriptor vector is projected into a dense tabular embedding:
     \begin{equation}
-    Q_{\mathrm{tab}} = W_Q \, x_{\mathrm{tabular}} \in \mathbb{R}^{B \times 1 \times 128}
+    \mathbf{h}_{\mathrm{tab}} = \mathrm{MLP}(x_{\mathrm{tabular}}) \in \mathbb{R}^{B \times 128}
     \end{equation}
-    \item Atom-level node embeddings $H \in \mathbb{R}^{B \times |V| \times 128}$ from the GATv2 backbone are projected into operational key and value matrices:
+    \item The tabular token attends to the graph token and vice versa (bidirectional):
     \begin{equation}
-    K_{\mathrm{graph}} = W_K \, H \in \mathbb{R}^{B \times |V| \times 128}, \qquad V_{\mathrm{graph}} = W_V \, H \in \mathbb{R}^{B \times |V| \times 128}
-    \end{equation}
-    \item Scaled dot-product cross-modal attention is computed across $H = 4$ attention heads:
-    \begin{equation}
-    \mathrm{CrossAttn}(Q_{\mathrm{tab}}, K_{\mathrm{graph}}, V_{\mathrm{graph}}) = \mathrm{softmax}\left( \frac{Q_{\mathrm{tab}} K_{\mathrm{graph}}^T}{\sqrt{d_k}} \right) V_{\mathrm{graph}}
+    \mathrm{CrossAttn}(\mathbf{h}_{\mathrm{tab}}, \mathbf{h}_{\mathrm{graph}}) = \mathrm{softmax}\!\left( \frac{Q_{\mathrm{tab}} K_{\mathrm{graph}}^T}{\sqrt{d_k}} \right) V_{\mathrm{graph}}
     \label{eq:s_cross_attn}
     \end{equation}
-    where $d_k = 128 / 4 = 32$.
+    where queries, keys, and values are each derived from the respective \emph{pooled} (128-D) vectors — not from individual atom embeddings — with $d_k = 128/4 = 32$.
+    \item A learned scalar gate weights the enriched tabular and graph tokens and produces the fused representation via a linear projection.
 \end{enumerate}
-This cross-modal conditioning layer produces an operations-aware molecular representation that modulates atomic feature importance in real-time as operating pressures or feed pH shift, enabling the model to dynamically resolve pH-dependent functional group ionization and charge-reversal phenomena.
+This cross-modal conditioning layer produces an operations-aware molecular representation at the \textbf{molecule level}, enabling dynamic modulation of the relative influence of topological versus operational descriptors across differing pH, flux, and pressure conditions.
 
 % ------------------------------------------------------------------------------
 \subsection{Structural Layer Dimensions of PhysiChem-GT}
@@ -614,11 +611,11 @@ Parameter & Constraint / Description & Optimized Value \\
 \midrule
 Pore Radius Monotonicity Split & $\partial \hat{y} / \partial r_p \le 0$ & Hard Monotone Decreasing ($-1$) \\
 Steric Ratio Monotonicity Split & $\partial \hat{y} / \partial \lambda \ge 0$ & Hard Monotone Increasing ($+1$) \\
-Maximum Tree Depth             & Structural complexity regularizer & 6 \\
-Number of Estimators           & Total gradient boosted trees & 500 \\
-Learning Rate ($\eta$)         & Step size shrinkage & 0.03 \\
-Subsample Ratio                & Row subsampling per boosting round & 0.80 \\
-Feature Fraction               & Colsample by tree & 0.75 \\
+Maximum Tree Depth             & Structural complexity regularizer & 7 \\
+Number of Estimators           & Total gradient boosted trees & 1{,}000 \\
+Learning Rate ($\eta$)         & Step size shrinkage & 0.02 \\
+Subsample Ratio                & Row subsampling per boosting round & 0.85 \\
+Feature Fraction               & Colsample by tree & 0.85 \\
 Input Dimensionality           & 24 Physics Descriptors + 256 ECFP4 Bits & 280 Dimensions \\
 \bottomrule
 \end{tabularx}
@@ -889,7 +886,7 @@ H = \log D \cdot \cos(\mathrm{WCA}) = 0.7761 \times \cos(41.40^\circ) = 0.7761 \
 
 \begin{enumerate}[leftmargin=1.0cm]
     \item \textbf{Tabular Vector Assembly:} The 19 raw continuous descriptors and the 5 engineered physical features are normalized and concatenated with the 256-bit Morgan ECFP4 fingerprint ($\text{radius} = 2$), forming the complete booster input vector $\mathbf{x}_{\mathrm{XGB}} \in \mathbb{R}^{280}$.
-    \item \textbf{Monotonic Split Tree Evaluation:} An ensemble of $M = 300$ gradient-boosted decision trees (maximum depth $D = 6$, learning rate $\eta = 0.05$) evaluates $\mathbf{x}_{\mathrm{XGB}}$. Every split on $r_p$ and $\lambda$ is strictly constrained by the monotonicity directional vector:
+    \item \textbf{Monotonic Split Tree Evaluation:} An ensemble of $M = 1{,}000$ gradient-boosted decision trees (maximum depth $D = 7$, learning rate $\eta = 0.02$, subsample ratio $= 0.85$, column fraction $= 0.85$) evaluates $\mathbf{x}_{\mathrm{XGB}}$. Every split on $r_p$ and $\lambda$ is strictly constrained by the monotonicity directional vector:
     \begin{equation}
     \frac{\partial \hat{y}}{\partial r_p} \le 0, \quad \frac{\partial \hat{y}}{\partial \lambda} \ge 0
     \end{equation}
