@@ -1,7 +1,0 @@
-RESEARCH HIGHLIGHTS: PhysiChem-GTX
-
-• Dual-Stream Architecture: Coupled a stereochemically aware Graph Transformer with monotonic tree ensembles via a physical steric gate to balance atomistic interpretability with macroscopic bounds.
-• Top Benchmark Accuracy: Attained R² = 0.9130, RMSE = 8.56%, and MAE = 5.52% on the MemTrOC corpus (N = 1,618), surpassing MolGBN-OPR (R² = 0.9014) and establishing top holdout accuracy.
-• Embedded Hydrodynamic Priors: Integrated five mechanistically motivated transport descriptors (λ, Φ, Lp, Ψ, H) directly into feature representations and loss boundary constraints.
-• Calibrated Prediction Uncertainty: Quantified prediction intervals using Monte Carlo dropout and residual variance (71.6% 1σ and 94.4% 2σ coverage), yielding calibrated uncertainty bounds for research-stage screening and decision support.
-• Multi-Scale Interpretability: Reconciled population-level TreeSHAP feature rankings with atom-resolved Integrated Gradients maps across distinct pharmaceutical charge regimes.
